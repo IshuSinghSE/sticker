@@ -15,18 +15,18 @@ class MessageManager {
     if (!this.overlay) {
       this.overlay = document.createElement('div');
       this.overlay.id = 'messageOverlay';
-      this.overlay.className = 'message-overlay';
+      this.overlay.className = 'message-overlay fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50 p-4';
       document.body.appendChild(this.overlay);
     }
 
     this.messageBox = document.createElement('div');
-    this.messageBox.className = 'message-box';
+    this.messageBox.className = 'bg-white rounded-2xl shadow-2xl max-w-md w-full mx-auto p-8 text-center border border-gray-200';
 
     this.messageText = document.createElement('p');
-    this.messageText.className = 'message-text';
+    this.messageText.className = 'text-gray-800 text-lg leading-relaxed mb-8';
 
     this.messageActions = document.createElement('div');
-    this.messageActions.className = 'message-actions';
+    this.messageActions.className = 'flex gap-3 justify-center flex-wrap';
 
     this.messageBox.appendChild(this.messageText);
     this.messageBox.appendChild(this.messageActions);
@@ -54,7 +54,7 @@ class MessageManager {
     if (actions && actions.length > 0) {
       actions.forEach(action => {
         const button = document.createElement('button');
-        button.className = `px-4 py-2 rounded-lg font-medium transition-colors ${this.getButtonClass(action.class)}`;
+        button.className = `px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm ${this.getButtonClass(action.class)}`;
         button.textContent = action.text;
         button.onclick = () => {
           if (action.handler) {
@@ -66,7 +66,7 @@ class MessageManager {
       });
     } else {
       const okButton = document.createElement('button');
-      okButton.className = 'px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition-colors';
+      okButton.className = 'px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95 shadow-sm';
       okButton.textContent = 'OK';
       okButton.onclick = () => this.hide();
       this.messageActions.appendChild(okButton);
@@ -127,9 +127,9 @@ class MessageManager {
 
   showLoading(message = 'Loading...') {
     this.messageText.innerHTML = `
-      <div class="flex items-center gap-2 justify-center">
+      <div class="flex items-center gap-3 justify-center">
         <div class="loading-spinner"></div>
-        <span>${message}</span>
+        <span class="text-gray-700 font-medium">${message}</span>
       </div>
     `;
     this.messageActions.innerHTML = '';
@@ -140,17 +140,17 @@ class MessageManager {
   getButtonClass(buttonType) {
     switch (buttonType) {
       case 'btn-primary':
-        return 'bg-purple-500 hover:bg-purple-600 text-white';
+        return 'bg-primary-500 hover:bg-primary-600 text-white border border-primary-500';
       case 'btn-secondary':
-        return 'bg-gray-500 hover:bg-gray-600 text-white';
+        return 'bg-gray-500 hover:bg-gray-600 text-white border border-gray-500';
       case 'btn-success':
-        return 'bg-green-500 hover:bg-green-600 text-white';
+        return 'bg-emerald-500 hover:bg-emerald-600 text-white border border-emerald-500';
       case 'btn-danger':
-        return 'bg-red-500 hover:bg-red-600 text-white';
+        return 'bg-red-500 hover:bg-red-600 text-white border border-red-500';
       case 'btn-warning':
-        return 'bg-yellow-500 hover:bg-yellow-600 text-white';
+        return 'bg-amber-500 hover:bg-amber-600 text-white border border-amber-500';
       default:
-        return 'bg-purple-500 hover:bg-purple-600 text-white';
+        return 'bg-primary-500 hover:bg-primary-600 text-white border border-primary-500';
     }
   }
 }

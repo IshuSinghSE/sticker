@@ -17,6 +17,8 @@ class CanvasManager {
     this.canvas.style.cursor = 'crosshair';
     this.canvas.style.touchAction = 'none';
     this.canvas.style.userSelect = 'none';
+    this.canvas.style.display = 'block';
+    this.canvas.style.objectFit = 'contain';
   }
 
   loadImage(imageSrc) {
@@ -34,42 +36,59 @@ class CanvasManager {
   drawImageOnCanvas() {
     if (!this.originalImage.src) return;
 
-    // Ensure minimum canvas size for grid visibility
-    const minCanvasSize = 400;
-    const maxWidth = Math.max(this.container.clientWidth, minCanvasSize);
-    const maxHeight = Math.max(window.innerHeight * 0.7, minCanvasSize);
-
+    // Get container dimensions
+    const containerWidth = this.container.clientWidth;
+    const containerHeight = Math.min(window.innerHeight * 0.6, 600);
+    
+    // Calculate aspect ratio
     const aspectRatio = this.originalImage.width / this.originalImage.height;
-    let canvasWidth = Math.max(this.originalImage.width, minCanvasSize);
-    let canvasHeight = Math.max(this.originalImage.height, minCanvasSize);
-
-    // Scale to fit container while maintaining minimum size
-    if (canvasWidth > maxWidth) {
-      canvasWidth = maxWidth;
+    
+    // Set minimum size for grid visibility
+    const minSize = Math.min(containerWidth * 0.8, 300);
+    
+    // Calculate canvas dimensions maintaining aspect ratio
+    let canvasWidth, canvasHeight;
+    
+    if (aspectRatio > 1) {
+      // Landscape image
+      canvasWidth = Math.min(containerWidth * 0.9, 800);
+      canvasHeight = canvasWidth / aspectRatio;
+      
+      if (canvasHeight > containerHeight) {
+        canvasHeight = containerHeight;
+        canvasWidth = canvasHeight * aspectRatio;
+      }
+    } else {
+      // Portrait or square image
+      canvasHeight = Math.min(containerHeight, 600);
+      canvasWidth = canvasHeight * aspectRatio;
+      
+      if (canvasWidth > containerWidth * 0.9) {
+        canvasWidth = containerWidth * 0.9;
+        canvasHeight = canvasWidth / aspectRatio;
+      }
+    }
+    
+    // Ensure minimum size for usability
+    if (canvasWidth < minSize) {
+      canvasWidth = minSize;
       canvasHeight = canvasWidth / aspectRatio;
     }
-    if (canvasHeight > maxHeight) {
-      canvasHeight = maxHeight;
+    if (canvasHeight < minSize) {
+      canvasHeight = minSize;
       canvasWidth = canvasHeight * aspectRatio;
     }
 
-    // Ensure minimum dimensions are maintained
-    if (canvasWidth < minCanvasSize) {
-      canvasWidth = minCanvasSize;
-      canvasHeight = canvasWidth / aspectRatio;
-    }
-    if (canvasHeight < minCanvasSize) {
-      canvasHeight = minCanvasSize;
-      canvasWidth = canvasHeight * aspectRatio;
-    }
-
-    // Set canvas size
+    // Set canvas internal dimensions (for drawing)
     this.canvas.width = Math.floor(canvasWidth);
     this.canvas.height = Math.floor(canvasHeight);
     
-    // Set CSS dimensions
+    // Set canvas display dimensions (CSS) - prevent stretching
     this.canvas.style.width = `${canvasWidth}px`;
     this.canvas.style.height = `${canvasHeight}px`;
+    this.canvas.style.maxWidth = '100%';
+    this.canvas.style.maxHeight = '100%';
+    this.canvas.style.objectFit = 'contain';
 
     this.clearCanvas();
     this.ctx.drawImage(this.originalImage, 0, 0, this.canvas.width, this.canvas.height);

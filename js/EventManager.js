@@ -100,6 +100,10 @@ class EventManager {
       this.updateCursor(nearestLine.type);
       this.canvasManager.drawGrid(this.gridManager);
       if (e.preventDefault) e.preventDefault();
+    } else {
+      // Not near a grid line, prepare for potential cell selection
+      this.isDragging = false;
+      this.isGridLineDragging = false;
     }
   }
 
@@ -130,7 +134,13 @@ class EventManager {
   }
 
   handleCanvasClick(e) {
-    if (!this.canvasManager.imageLoaded || this.isGridLineDragging) {
+    if (!this.canvasManager.imageLoaded) {
+      return;
+    }
+
+    // Don't handle click if we just finished dragging a grid line
+    if (this.isGridLineDragging) {
+      this.isGridLineDragging = false;
       return;
     }
 
@@ -141,15 +151,26 @@ class EventManager {
       // Free crop mode
       this.cropEntireImage();
     } else {
-      // Grid mode
-      const cell = this.gridManager.getCellFromCoordinates(normalizedCoords.x, normalizedCoords.y);
-      if (cell) {
-        this.gridManager.toggleCellSelection(cell.row, cell.col);
-        this.canvasManager.drawGrid(this.gridManager);
-        
-        // Update Select All button state
-        if (this.selectionCallback) {
-          this.selectionCallback();
+      // Grid mode - check if we're clicking on a cell, not a grid line
+      const canvasCoords = this.canvasManager.getCanvasCoordinates(coords.x, coords.y);
+      const nearestLine = this.gridManager.findNearestGridLine(
+        canvasCoords.x, 
+        canvasCoords.y, 
+        this.canvas.width, 
+        this.canvas.height
+      );
+
+      // Only select cell if we're not near a grid line
+      if (!nearestLine) {
+        const cell = this.gridManager.getCellFromCoordinates(normalizedCoords.x, normalizedCoords.y);
+        if (cell) {
+          this.gridManager.toggleCellSelection(cell.row, cell.col);
+          this.canvasManager.drawGrid(this.gridManager);
+          
+          // Update Select All button state
+          if (this.selectionCallback) {
+            this.selectionCallback();
+          }
         }
       }
     }
