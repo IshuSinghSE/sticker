@@ -9,6 +9,7 @@ class EventManager {
     this.canvas = canvasManager.canvas;
     this.hammer = null;
     this.isDragging = false;
+    this.isGridLineDragging = false;
     this.selectionCallback = selectionCallback;
     
     this.setupEventListeners();
@@ -94,6 +95,7 @@ class EventManager {
 
     if (nearestLine) {
       this.isDragging = true;
+      this.isGridLineDragging = true;
       this.gridManager.startDrag(nearestLine, coords);
       this.updateCursor(nearestLine.type);
       this.canvasManager.drawGrid(this.gridManager);
@@ -121,13 +123,14 @@ class EventManager {
   handlePointerUp(e) {
     if (this.gridManager.endDrag()) {
       this.isDragging = false;
+      this.isGridLineDragging = false;
       this.canvas.style.cursor = 'crosshair';
       this.canvasManager.drawGrid(this.gridManager);
     }
   }
 
   handleCanvasClick(e) {
-    if (!this.canvasManager.imageLoaded || this.isDragging) {
+    if (!this.canvasManager.imageLoaded || this.isGridLineDragging) {
       return;
     }
 

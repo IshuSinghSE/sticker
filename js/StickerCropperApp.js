@@ -247,8 +247,10 @@ class StickerCropperApp {
     const defaultCanvas = document.createElement('canvas');
     const defaultCtx = defaultCanvas.getContext('2d');
     
-    // Make canvas size proportional to grid size
-    const cellSize = Math.min(800 / Math.max(rows, cols), 200);
+    // Make canvas size adequate - minimum 120px per cell to ensure visibility
+    const minCellSize = 120;
+    const maxCellSize = 200;
+    const cellSize = Math.max(minCellSize, Math.min(maxCellSize, 800 / Math.max(rows, cols)));
     defaultCanvas.width = cols * cellSize;
     defaultCanvas.height = rows * cellSize;
     
@@ -266,9 +268,9 @@ class StickerCropperApp {
       emojis.push(baseEmojis[i % baseEmojis.length]);
     }
     
-    // Set font size proportional to cell size
-    const fontSize = Math.floor(cellSize * 0.6);
-    defaultCtx.font = `${fontSize}px Arial`;
+    // Set font size proportional to cell size - make it bigger for better visibility
+    const fontSize = Math.floor(cellSize * 0.7);
+    defaultCtx.font = `${fontSize}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", serif`;
     defaultCtx.textAlign = 'center';
     defaultCtx.textBaseline = 'middle';
     
@@ -284,9 +286,22 @@ class StickerCropperApp {
         defaultCtx.lineWidth = 1;
         defaultCtx.strokeRect(col * cellSize, row * cellSize, cellSize, cellSize);
         
-        // Draw emoji
+        // Draw emoji with better contrast
         defaultCtx.fillStyle = '#000000';
         defaultCtx.fillText(emoji, x, y);
+        
+        // Add a subtle shadow effect for better visibility
+        defaultCtx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+        defaultCtx.shadowBlur = 2;
+        defaultCtx.shadowOffsetX = 1;
+        defaultCtx.shadowOffsetY = 1;
+        defaultCtx.fillText(emoji, x, y);
+        
+        // Reset shadow
+        defaultCtx.shadowColor = 'transparent';
+        defaultCtx.shadowBlur = 0;
+        defaultCtx.shadowOffsetX = 0;
+        defaultCtx.shadowOffsetY = 0;
       }
     }
     
