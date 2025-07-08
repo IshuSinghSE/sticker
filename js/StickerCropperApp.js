@@ -128,10 +128,10 @@ class StickerCropperApp {
   handleSelectAll() {
     if (this.gridManager.isAllSelected()) {
       this.gridManager.deselectAllCells();
-      this.elements.selectAllBtn.textContent = '✅ Select All';
+      this.updateSelectAllButton();
     } else {
       this.gridManager.selectAllCells();
-      this.elements.selectAllBtn.textContent = '❌ Deselect All';
+      this.updateSelectAllButton();
     }
     this.canvasManager.drawGrid(this.gridManager);
   }
@@ -198,10 +198,16 @@ class StickerCropperApp {
   }
 
   updateSelectAllButton() {
+    const selectAllBtn = this.elements.selectAllBtn;
+    const iconSvg = selectAllBtn.querySelector('svg');
+    const textNode = selectAllBtn.childNodes[selectAllBtn.childNodes.length - 1];
+    
     if (this.gridManager.isAllSelected()) {
-      this.elements.selectAllBtn.textContent = '❌ Deselect All';
+      iconSvg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>';
+      textNode.textContent = ' Deselect All';
     } else {
-      this.elements.selectAllBtn.textContent = '✅ Select All';
+      iconSvg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>';
+      textNode.textContent = ' Select All';
     }
   }
 

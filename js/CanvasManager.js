@@ -113,7 +113,7 @@ class CanvasManager {
 
   drawSelectedCells(gridManager) {
     this.ctx.save();
-    this.ctx.fillStyle = 'rgba(139, 92, 246, 0.3)'; // Purple semi-transparent overlay
+    this.ctx.fillStyle = 'rgba(168, 85, 247, 0.3)'; // Use the proper primary color with transparency
     
     gridManager.selectedCells.forEach(cellId => {
       const [row, col] = cellId.split(',').map(Number);
@@ -130,8 +130,8 @@ class CanvasManager {
   drawGridLines(gridManager) {
     const isDragging = gridManager.isDragging;
     this.ctx.strokeStyle = isDragging ? 
-      'rgba(139, 92, 246, 1)' : 
-      'rgba(139, 92, 246, 0.8)';
+      'rgba(168, 85, 247, 1)' : 
+      'rgba(168, 85, 247, 0.8)';
     this.ctx.lineWidth = 2;
 
     // Draw vertical lines
@@ -171,17 +171,21 @@ class CanvasManager {
 
   getCanvasCoordinates(clientX, clientY) {
     const rect = this.canvas.getBoundingClientRect();
+    // Account for device pixel ratio for more accurate coordinates
+    const scaleX = this.canvas.width / rect.width;
+    const scaleY = this.canvas.height / rect.height;
+    
     return {
-      x: clientX - rect.left,
-      y: clientY - rect.top
+      x: (clientX - rect.left) * scaleX,
+      y: (clientY - rect.top) * scaleY
     };
   }
 
   getNormalizedCoordinates(clientX, clientY) {
-    const canvasCoords = this.getCanvasCoordinates(clientX, clientY);
+    const rect = this.canvas.getBoundingClientRect();
     return {
-      x: canvasCoords.x / this.canvas.width,
-      y: canvasCoords.y / this.canvas.height
+      x: (clientX - rect.left) / rect.width,
+      y: (clientY - rect.top) / rect.height
     };
   }
 

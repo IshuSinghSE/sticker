@@ -1,158 +1,111 @@
 # Sticker Cropper & Packager
 
-A modern web application for cropping stickers from images using a draggable, adjustable grid system. Built with vanilla JavaScript using Object-Oriented Programming principles and modular architecture.
+A modern, responsive web application for cropping stickers from images using an advanced draggable grid system. Built with vanilla JavaScript using Object-Oriented Programming principles and styled with Tailwind CSS.
 
-## Features
+## ✨ Features
 
-- **Interactive Grid System**: Drag and adjust grid lines to customize crop areas
-- **Toggle Cell Selection**: Click grid cells to select/deselect them with visual feedback
-- **Boundary Protection**: Prevents selection outside adjusted grid boundaries
-- **Batch Processing**: Crop multiple selected cells at once
-- **ZIP Download**: Download all cropped stickers as a ZIP file
-- **Responsive Design**: Works on both desktop and mobile devices
-- **Modern UI**: Clean, accessible interface with smooth animations
+- **🎯 Interactive Grid System**: Drag and adjust grid lines to customize crop areas with precision
+- **👆 Intuitive Cell Selection**: Click/tap grid cells to select them with visual feedback
+- **📱 Mobile-First Design**: Optimized for both desktop and mobile devices with Hammer.js touch support
+- **🎨 Modern UI**: Clean, professional interface with smooth animations and purple theme
+- **⚡ Performance Optimized**: Efficient canvas operations and event handling
+- **🔧 Fully Customizable**: Easy to modify colors, themes, and behavior
+- **📦 ZIP Download**: Download all cropped stickers as a convenient ZIP file
+- **🖼️ Default Content**: Dynamic emoji grid that adapts to any grid size
 
-## File Structure
+## 🏗️ Architecture
+
+### Object-Oriented Design
+- **`StickerCropperApp`**: Main application orchestrator
+- **`CanvasManager`**: Handles canvas rendering and image operations
+- **`GridManager`**: Manages grid state and cell selection
+- **`StickerManager`**: Handles sticker storage and preview
+- **`EventManager`**: Manages user interactions with touch support
+- **`MessageManager`**: Handles notifications and dialogs
+
+### Technology Stack
+- **Frontend**: Vanilla JavaScript (ES6+), HTML5 Canvas, Tailwind CSS
+- **Touch Support**: Hammer.js for robust mobile interaction
+- **File Processing**: JSZip for ZIP generation, FileSaver.js for downloads
+- **Styling**: Tailwind CSS with custom CSS variables
+
+## 📁 Project Structure
 
 ```
 sticker/
-├── index.html                 # Main HTML file with Tailwind CSS
+├── index.html              # Main HTML file with Tailwind CSS
 ├── css/
-│   └── styles.css            # Consolidated custom styles and CSS variables
+│   └── styles.css          # Consolidated custom styles
 ├── js/
 │   ├── StickerCropperApp.js # Main application class
-│   ├── CanvasManager.js     # Canvas operations and drawing
-│   ├── GridManager.js       # Grid logic and cell management
-│   ├── StickerManager.js    # Sticker storage and preview
-│   ├── EventManager.js      # Event handling and user interactions
-│   └── MessageManager.js    # User notifications and messages
+│   ├── CanvasManager.js     # Canvas operations
+│   ├── GridManager.js       # Grid logic
+│   ├── StickerManager.js    # Sticker management
+│   ├── EventManager.js      # Event handling
+│   └── MessageManager.js    # User notifications
 ├── sticker_sheet.png        # Default sample image
 └── README.md               # This file
 ```
 
-## Architecture
-
-### Object-Oriented Design
-
-The application uses a modular OOP approach with the following classes:
-
-1. **StickerCropperApp**: Main application orchestrator
-2. **CanvasManager**: Handles canvas rendering and image operations
-3. **GridManager**: Manages grid state, cell selection, and line positioning
-4. **StickerManager**: Handles sticker storage, preview, and ZIP generation
-5. **EventManager**: Manages user interactions and event handling
-6. **MessageManager**: Handles user notifications and dialogs
-
-### CSS Variables
-
-All colors and design tokens are defined in `css/styles.css` for easy customization:
-
-```css
-:root {
-  --primary-color: #8b5cf6;
-  --primary-hover: #7c3aed;
-  --bg-selected: rgba(139, 92, 246, 0.3);
-  /* ... more variables */
-}
-```
-
-### Modern Styling Approach
-
-The application uses a hybrid approach combining:
-- **Tailwind CSS**: For utility-first responsive design and rapid development
-- **Custom CSS Variables**: For consistent theming and easy customization
-- **Minimal Custom CSS**: Only for essential styles not covered by Tailwind
-
-This approach provides:
-- **Consistency**: Tailwind's design system ensures consistent spacing, colors, and typography
-- **Maintainability**: Easy to modify and extend with Tailwind utilities
-- **Customization**: CSS variables allow for easy theme changes
-- **Performance**: Minimal custom CSS reduces bundle size
-
-## Usage
+## 💡 Usage
 
 ### Basic Operations
+1. **📤 Upload Image**: Click the upload area or use the default emoji grid
+2. **🔢 Adjust Grid**: Change rows/columns with the number inputs
+3. **🎯 Select Cells**: Click/tap grid cells to select them (purple highlight)
+4. **↔️ Adjust Boundaries**: Drag purple grid lines to customize crop areas
+5. **✅ Select All**: Use the "Select All" button to toggle all cells
+6. **✂️ Crop**: Click "Crop Selected" to generate stickers
+7. **📦 Download**: Click "Download ZIP" to get all stickers
 
-1. **Load Image**: Click "Upload Image" or use the default sample image
-2. **Adjust Grid**: Use the number inputs to change rows/columns
-3. **Select Cells**: Click on grid cells to select them (blue highlight)
-4. **Adjust Boundaries**: Drag blue grid lines to customize crop areas
-5. **Crop Stickers**: Click "Crop Selected" to generate stickers
-6. **Download**: Click "Download ZIP" to get all stickers
+## 🎨 Customization
 
-### Advanced Features
-
-- **Reset Grid**: Restore evenly spaced grid lines
-- **Clear Selection**: Remove all selected cells
-- **Remove Stickers**: Click on sticker previews to remove them
-- **Clear All**: Remove all generated stickers
-
-## Customization
-
-### Changing Colors
-
-Edit `css/styles.css` to customize the color scheme:
-
+### Colors & Theme
 ```css
 :root {
-  --primary-color: #your-color;
-  --primary-hover: #your-hover-color;
-  --bg-selected: rgba(your-rgb, 0.3);
+  --primary-color: #a855f7;
+  --primary-hover: #9333ea;
+  --primary-selected: rgba(168, 85, 247, 0.3);
+  --grid-line-color: rgba(168, 85, 247, 0.8);
 }
 ```
 
-### Modifying Layout
+### Tailwind Configuration
+Customize the Tailwind theme in `index.html` script tag.
 
-- **Tailwind Classes**: Edit classes directly in `index.html` for quick changes
-- **Custom Styles**: Edit `css/styles.css` for specialized styling
-- **Component Styles**: Update utility classes in the HTML elements
+## 🔧 Development
 
-### Adding Features
+```bash
+# Start development server
+python3 -m http.server 8000
 
-1. Create new methods in the appropriate manager classes
-2. Add event listeners in `EventManager.js`
-3. Update the UI in `index.html` using Tailwind classes
-4. Add custom styles in `css/styles.css` if needed
+# Open browser
+open http://localhost:8000
+```
 
-## Dependencies
+## 📱 Mobile Optimization
+- **Touch Events**: Hammer.js for reliable touch handling
+- **Responsive Design**: Adapts to all screen sizes
+- **Performance**: Optimized canvas operations
+- **User Experience**: Intuitive gestures and feedback
 
-- **JSZip**: For creating ZIP files
-- **FileSaver.js**: For downloading files
-- **Modern Browser**: Supports ES6 classes and Canvas API
+## 🌐 Browser Support
+- Chrome 60+ ✅
+- Firefox 55+ ✅
+- Safari 12+ ✅
+- Edge 79+ ✅
+- Mobile browsers ✅
 
-## Browser Support
+## 🔄 Recent Updates
+- **Enhanced Mobile UX**: Better touch handling and responsive design
+- **Modern UI**: Updated to use Tailwind CSS extensively
+- **Purple Theme**: Consistent color scheme throughout
+- **Performance**: Improved canvas coordinate calculations
+- **Accessibility**: Better focus management and ARIA support
 
-- Chrome 60+
-- Firefox 55+
-- Safari 12+
-- Edge 79+
-
-## Development
-
-### Local Development
-
-1. Clone the repository
-2. Start a local HTTP server:
-   ```bash
-   python3 -m http.server 8000
-   ```
-3. Open `http://localhost:8000` in your browser
-
-### Code Organization
-
-- Keep classes focused on single responsibilities
-- Use CSS variables for all colors and spacing
-- Follow consistent naming conventions
-- Add comments for complex logic
-- Test on both desktop and mobile devices
-
-## Performance Considerations
-
-- Images are processed on the client side
-- Canvas operations are optimized for smooth interactions
-- Event listeners are properly managed to prevent memory leaks
-- CSS animations use GPU acceleration where possible
-
-## License
-
+## 📄 License
 This project is open source and available under the MIT License.
+
+---
+
+**Built with ❤️ for the modern web**
