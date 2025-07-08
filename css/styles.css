@@ -1,0 +1,223 @@
+/* Sticker Cropper App - Main Styles */
+
+/* CSS Variables */
+:root {
+  /* Color Variables */
+  --primary-color: #8b5cf6;
+  --primary-hover: #7c3aed;
+  --secondary-color: #6b7280;
+  --secondary-hover: #4b5563;
+  --success-color: #059669;
+  --success-hover: #047857;
+  --danger-color: #dc2626;
+  --danger-hover: #b91c1c;
+  --warning-color: #d97706;
+  --warning-hover: #b45309;
+  
+  /* Background Colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+  --bg-selected: rgba(139, 92, 246, 0.3);
+  
+  /* Text Colors */
+  --text-primary: #1f2937;
+  --text-secondary: #6b7280;
+  --text-tertiary: #9ca3af;
+  --text-white: #ffffff;
+  
+  /* Border Colors */
+  --border-primary: #e5e7eb;
+  --border-secondary: #d1d5db;
+  --border-focus: #8b5cf6;
+  --border-canvas: #e2e8f0;
+  
+  /* Grid Colors */
+  --grid-line-color: rgba(139, 92, 246, 0.8);
+  --grid-line-dragging: rgba(139, 92, 246, 1);
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+}
+
+/* Essential Canvas Styles */
+.canvas-container {
+  touch-action: none;
+  user-select: none;
+}
+
+.canvas {
+  cursor: crosshair;
+  touch-action: none;
+  user-select: none;
+}
+
+.canvas:hover {
+  border-color: var(--primary-color);
+}
+
+/* Sticker Preview Styles */
+.sticker-preview {
+  position: relative;
+  width: 5rem;
+  height: 5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  overflow: hidden;
+}
+
+.sticker-preview:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.sticker-preview.selected {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
+}
+
+.sticker-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 0.5rem;
+}
+
+.sticker-checkmark {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  background-color: var(--primary-color);
+  color: var(--text-white);
+  border-radius: 50%;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.sticker-preview.selected .sticker-checkmark {
+  opacity: 1;
+}
+
+/* Message Overlay */
+.message-overlay {
+  backdrop-filter: blur(4px);
+}
+
+.message-box {
+  background-color: var(--bg-primary);
+  padding: 2rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 90%;
+  max-height: 90%;
+  text-align: center;
+  animation: messageSlideIn 0.3s ease-out;
+}
+
+.message-text {
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+.message-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+  display: inline-block;
+  width: 1.5rem;
+  height: 1.5rem;
+  border: 2px solid var(--border-primary);
+  border-top: 2px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Animations */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.fade-out {
+  animation: fadeOut 0.3s ease-in-out;
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Keyframes */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Preview Empty State */
+.preview-empty {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Focus styles for accessibility */
+.focus-visible:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+/* Utility Classes */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

@@ -3,854 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sticker Cropper</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Sticker Cropper & Packager</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Inter Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Hammer.js for touch events -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+    
+    <!-- Main Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+    
+    <!-- Custom Styles -->
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f2f5;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .container {
-            background-color: #ffffff;
-            border-radius: 1rem; /* rounded-xl */
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-xl */
-            padding: 1.5rem; /* p-6 */
-            max-width: 90%;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem; /* gap-6 */
-        }
-        canvas {
-            border: 2px solid #e2e8f0; /* border-gray-200 */
-            border-radius: 0.5rem; /* rounded-lg */
-            background-color: #f8fafc; /* bg-gray-50 */
-            display: block;
-            margin: 0 auto; /* Center the canvas */
-            max-width: 100%; /* Responsive but not forced to 100% */
-            height: auto; /* Maintain aspect ratio */
-            object-fit: contain; /* Ensure image fits within canvas without distortion */
-            position: relative; /* Needed for absolute positioning of draggable lines */
-            cursor: crosshair;
-            touch-action: none; /* Prevent default touch behaviors */
-            user-select: none; /* Prevent text selection */
-        }
-        .button-primary {
-            background-color: #4f46e5; /* indigo-600 */
-            color: white;
-            padding: 0.75rem 1.5rem; /* py-3 px-6 */
-            border-radius: 0.75rem; /* rounded-xl */
-            font-weight: 600; /* font-semibold */
-            transition: background-color 0.3s ease;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-        .button-primary:hover {
-            background-color: #4338ca; /* indigo-700 */
-        }
-        .button-secondary {
-            background-color: #6b7280; /* gray-500 */
-            color: white;
-            padding: 0.75rem 1.5rem; /* py-3 px-6 */
-            border-radius: 0.75rem; /* rounded-xl */
-            font-weight: 600; /* font-semibold */
-            transition: background-color 0.3s ease;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-        .button-secondary:hover {
-            background-color: #4b5563; /* gray-600 */
-        }
-        .input-file {
-            display: none;
-        }
-        .custom-file-upload {
-            border: 2px dashed #9ca3af; /* gray-400 */
-            border-radius: 0.75rem; /* rounded-xl */
-            padding: 1rem 1.5rem; /* p-4 px-6 */
-            cursor: pointer;
-            text-align: center;
-            color: #4b5563; /* gray-600 */
-            font-weight: 600; /* font-semibold */
-            transition: border-color 0.3s ease, color 0.3s ease;
-        }
-        .custom-file-upload:hover {
-            border-color: #6b7280; /* gray-500 */
-            color: #374151; /* gray-700 */
-        }
-        .grid-selector select {
-            border: 1px solid #d1d5db; /* gray-300 */
-            border-radius: 0.5rem; /* rounded-lg */
-            padding: 0.5rem 1rem; /* py-2 px-4 */
-            font-size: 1rem;
-            background-color: white;
-            appearance: none; /* Remove default arrow */
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='currentColor'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'%3E%3C/path%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 0.75rem center;
-            background-size: 1.5em 1.5em;
-        }
-        .message-box {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            z-index: 1000;
-            display: none; /* Hidden by default */
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            text-align: center;
-        }
-        .message-box button {
-            background-color: #4f46e5;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-        }
-
-        /* Styles for cropped sticker preview items */
-        .sticker-preview-item {
-            position: relative;
-            width: 80px;
-            height: 80px;
-            object-fit: contain;
-            border-radius: 0.5rem;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            border: 1px solid #e2e8f0;
-            cursor: pointer;
-            transition: transform 0.2s ease-in-out;
-        }
-        .sticker-preview-item:hover {
-            transform: scale(1.05);
-        }
-        .sticker-preview-item.selected {
-            border-color: #4f46e5; /* Highlight selected */
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.5);
-        }
-        .sticker-preview-item .checkmark {
-            position: absolute;
-            top: 5px;
-            right: 5px;
-            background-color: #4f46e5;
-            color: white;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 0.75rem;
-            font-weight: bold;
-            opacity: 0; /* Hidden by default */
-            transition: opacity 0.2s ease-in-out;
-        }
-        .sticker-preview-item.selected .checkmark {
-            opacity: 1; /* Show when selected */
         }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
-    <div class="container bg-white rounded-xl shadow-xl p-6 flex flex-col gap-6 w-full max-w-4xl">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-4">Sticker Cropper & Packager</h1>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-6xl">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">Sticker Cropper & Packager</h1>
+            <p class="text-gray-600">Create stickers from images with an adjustable grid system</p>
+        </header>
 
         <!-- File Upload Section -->
-        <div class="flex flex-col items-center gap-4">
-            <input type="file" id="imageInput" accept="image/*" class="input-file">
-            <label for="imageInput" class="custom-file-upload w-full max-w-md">
-                Click to Upload Image
-            </label>
-            <p id="fileName" class="text-gray-600 text-sm italic"></p>
-        </div>
-
-        <!-- Canvas and Controls Section -->
-        <div class="flex flex-col items-center gap-4">
-            <div id="canvasContainer" class="relative w-full max-w-full h-auto rounded-lg shadow-md" style="touch-action: none; user-select: none;">
-                <canvas id="imageCanvas"></canvas>
-                <!-- Draggable lines will be appended here by JS -->
-            </div>
-
-            <div class="grid-selector flex flex-col sm:flex-row items-center gap-4">
-                <div class="flex items-center gap-2">
-                    <label for="gridRows" class="text-gray-700 font-semibold">Rows:</label>
-                    <input type="number" id="gridRows" min="1" max="10" value="3" class="w-16 rounded-lg border border-gray-300 py-1 px-2 text-center focus:ring-indigo-500 focus:border-indigo-500">
+        <section class="mb-8">
+            <div class="flex flex-col items-center gap-4">
+                <div class="relative w-full max-w-md">
+                    <input type="file" id="imageInput" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    <label for="imageInput" class="flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 hover:bg-gray-100 hover:border-gray-400 transition-colors cursor-pointer">
+                        <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <span class="text-gray-700 font-medium">Click to Upload Image</span>
+                    </label>
                 </div>
-                <div class="flex items-center gap-2">
-                    <label for="gridCols" class="text-gray-700 font-semibold">Columns:</label>
-                    <input type="number" id="gridCols" min="1" max="10" value="3" class="w-16 rounded-lg border border-gray-300 py-1 px-2 text-center focus:ring-indigo-500 focus:border-indigo-500">
-                </div>
-                <button id="resetGridBtn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700 font-medium transition-colors">
-                    Reset Grid
-                </button>
-                <button id="cropSelectedBtn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors">
-                    Crop Selected
-                </button>
-                <button id="clearSelectionBtn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors">
-                    Clear Selection
-                </button>
+                <p id="fileName" class="text-sm text-gray-600 italic"></p>
             </div>
-            <p class="text-sm text-gray-500 mt-2">
-                Click/tap on grid cells to select them (blue highlight). Use "Crop Selected" to create stickers from selected cells. <br>
-                Drag the blue grid lines to adjust crop areas. Click/tap a selected sticker below to remove it.
-            </p>
-        </div>
+        </section>
 
-        <!-- Cropped Stickers Preview and Download -->
-        <div class="flex flex-col gap-4">
-            <h2 class="text-xl font-semibold text-gray-800">Selected Stickers: <span id="stickerCount" class="text-indigo-600">0</span></h2>
-            <div id="croppedStickersPreview" class="flex flex-wrap gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50 min-h-[100px] justify-center items-center">
-                <p id="noStickersMessage" class="text-gray-500 italic">No stickers selected yet.</p>
+        <!-- Canvas Section -->
+        <section class="mb-8">
+            <div class="flex flex-col items-center gap-6">
+                <div id="canvasContainer" class="canvas-container relative border-2 border-gray-200 rounded-xl overflow-hidden shadow-lg hover:border-purple-500 transition-colors">
+                    <canvas id="imageCanvas" class="canvas block max-w-full h-auto"></canvas>
+                </div>
+
+                <!-- Grid Controls -->
+                <div class="bg-gray-50 rounded-xl p-6 w-full">
+                    <div class="flex flex-col lg:flex-row items-center gap-4 mb-4">
+                        <div class="flex items-center gap-4">
+                            <div class="flex items-center gap-2">
+                                <label for="gridRows" class="text-sm font-semibold text-gray-700">Rows:</label>
+                                <input type="number" id="gridRows" min="1" max="10" value="3" 
+                                       class="w-16 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <label for="gridCols" class="text-sm font-semibold text-gray-700">Columns:</label>
+                                <input type="number" id="gridCols" min="1" max="10" value="3" 
+                                       class="w-16 px-3 py-2 border border-gray-300 rounded-lg text-center focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            </div>
+                        </div>
+                        
+                        <div class="flex flex-wrap gap-2">
+                            <button id="resetGridBtn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors">
+                                🔄 Reset Grid
+                            </button>
+                            <button id="selectAllBtn" class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg font-medium transition-colors">
+                                ✅ Select All
+                            </button>
+                            <button id="cropSelectedBtn" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors">
+                                ✂️ Crop Selected
+                            </button>
+                            <button id="clearSelectionBtn" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors">
+                                🗑️ Clear Selection
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Instructions -->
+                    <div class="bg-purple-50 border-l-4 border-purple-500 p-4 rounded-r-lg">
+                        <div class="text-sm text-purple-900">
+                            <strong>How to use:</strong><br>
+                            1. Click/tap on grid cells to select them (purple highlight)<br>
+                            2. Drag the purple grid lines to adjust crop areas<br>
+                            3. Use "Crop Selected" to create stickers from selected cells<br>
+                            4. Click on stickers below to remove them
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="flex flex-col sm:flex-row gap-4 justify-center mt-4">
-                <button id="downloadZipBtn" class="button-primary w-full sm:w-auto" disabled>Download Stickers (ZIP)</button>
-                <button id="clearStickersBtn" class="button-secondary w-full sm:w-auto" disabled>Clear All</button>
+        </section>
+
+        <!-- Preview Section -->
+        <section class="mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-semibold text-gray-800">Selected Stickers:</h2>
+                <span id="stickerCount" class="text-2xl font-bold text-purple-600">0</span>
             </div>
-        </div>
+            
+            <div id="croppedStickersPreview" class="flex flex-wrap gap-4 p-6 border-2 border-gray-200 rounded-xl bg-gray-50 min-h-[100px] items-center justify-center">
+                <p class="text-gray-500 italic">No stickers selected yet.</p>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+                <button id="downloadZipBtn" class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2" disabled>
+                    📦 Download ZIP
+                </button>
+                <button id="clearStickersBtn" class="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2" disabled>
+                    🗑️ Clear All
+                </button>
+            </div>
+        </section>
     </div>
 
-    <!-- Message Box for alerts -->
-    <div id="messageBox" class="message-box">
-        <p id="messageText"></p>
-        <button onclick="document.getElementById('messageBox').style.display='none'">OK</button>
+    <!-- Message Overlay -->
+    <div id="messageOverlay" class="message-overlay fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <!-- Message content will be dynamically inserted here -->
     </div>
 
-    <!-- JSZip and FileSaver.js CDNs -->
+    <!-- External Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
-    <script>
-        // Function to display custom messages instead of alert()
-        function showMessage(message) {
-            const messageBox = document.getElementById('messageBox');
-            const messageText = document.getElementById('messageText');
-            messageText.textContent = message;
-            messageBox.style.display = 'flex';
-        }
-
-        const imageInput = document.getElementById('imageInput');
-        const fileNameDisplay = document.getElementById('fileName');
-        const imageCanvas = document.getElementById('imageCanvas');
-        const ctx = imageCanvas.getContext('2d');
-        const croppedStickersPreview = document.getElementById('croppedStickersPreview');
-        const stickerCountSpan = document.getElementById('stickerCount');
-        const downloadZipBtn = document.getElementById('downloadZipBtn');
-        const clearStickersBtn = document.getElementById('clearStickersBtn');
-        const noStickersMessage = document.getElementById('noStickersMessage');
-        const canvasContainer = document.getElementById('canvasContainer');
-
-        let originalImage = new Image();
-        let croppedImages = []; // Stores objects { dataUrl, filename, id }
-        let gridRows = 3;
-        let gridCols = 3;
-        let imageLoaded = false;
-        let nextStickerId = 0; // Unique ID for each cropped sticker
-        let selectedCells = new Set(); // Track selected grid cells
-
-        // Store grid line positions relative to the image's original dimensions
-        // These will be scaled to canvas dimensions for drawing and interaction
-        let horizontalLinePositions = []; // Array of y-coordinates (0 to 1, percentage of image height)
-        let verticalLinePositions = [];   // Array of x-coordinates (0 to 1, percentage of image width)
-
-        let isDragging = false;
-        let draggedLine = null; // Stores the DOM element of the line being dragged
-        let dragStartCoord = { x: 0, y: 0 }; // Mouse position when drag starts
-        let dragStartLinePos = 0; // Initial position of the line being dragged
-
-        // Function to resize canvas and draw image, maintaining aspect ratio
-        function drawImageOnCanvas() {
-            if (!originalImage.src) return;
-
-            // Set canvas dimensions to match the original image dimensions
-            // This eliminates any scaling issues
-            const maxWidth = Math.min(canvasContainer.clientWidth, 800); // Limit max width
-            const maxHeight = Math.min(window.innerHeight * 0.7, 600); // Limit max height
-
-            const aspectRatio = originalImage.width / originalImage.height;
-            let canvasWidth = originalImage.width;
-            let canvasHeight = originalImage.height;
-
-            // Scale down if image is too large
-            if (canvasWidth > maxWidth) {
-                canvasWidth = maxWidth;
-                canvasHeight = canvasWidth / aspectRatio;
-            }
-            if (canvasHeight > maxHeight) {
-                canvasHeight = maxHeight;
-                canvasWidth = canvasHeight * aspectRatio;
-            }
-
-            // Set canvas size to match display size exactly
-            imageCanvas.width = Math.floor(canvasWidth);
-            imageCanvas.height = Math.floor(canvasHeight);
-            
-            // Also set CSS dimensions to match canvas dimensions exactly
-            imageCanvas.style.width = `${canvasWidth}px`;
-            imageCanvas.style.height = `${canvasHeight}px`;
-
-            ctx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
-            ctx.drawImage(originalImage, 0, 0, imageCanvas.width, imageCanvas.height);
-            drawGridLines();
-        }
-
-        // Function to initialize grid line positions based on current gridRows/Cols
-        function initializeGridLines() {
-            horizontalLinePositions = [];
-            verticalLinePositions = [];
-
-            // Calculate initial positions based on even distribution
-            // Include border lines (0 and 1) plus internal lines
-            for (let i = 0; i <= gridRows; i++) {
-                horizontalLinePositions.push(i / gridRows); // Percentage of height
-            }
-            for (let i = 0; i <= gridCols; i++) {
-                verticalLinePositions.push(i / gridCols); // Percentage of width
-            }
-        }
-
-        // Function to draw grid lines on the canvas
-        function drawGridLines() {
-            if (!imageLoaded) return;
-
-            // Clear previous grid lines drawn by canvas
-            ctx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
-            ctx.drawImage(originalImage, 0, 0, imageCanvas.width, imageCanvas.height);
-
-            if (gridRows === 1 && gridCols === 1) return; // No grid lines in free crop mode
-
-            // Draw selected cells (semi-transparent overlay)
-            ctx.save();
-            ctx.fillStyle = 'rgba(79, 70, 229, 0.3)';
-            selectedCells.forEach(cellId => {
-                const [row, col] = cellId.split(',').map(Number);
-                
-                // Calculate actual positions on canvas
-                const x1 = verticalLinePositions[col] * imageCanvas.width;
-                const y1 = horizontalLinePositions[row] * imageCanvas.height;
-                const x2 = verticalLinePositions[col + 1] * imageCanvas.width;
-                const y2 = horizontalLinePositions[row + 1] * imageCanvas.height;
-                
-                ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
-            });
-            ctx.restore();
-
-            // Only draw blue interactive lines, no gray background grid
-            ctx.strokeStyle = isDragging ? 'rgba(79, 70, 229, 1)' : 'rgba(79, 70, 229, 0.8)';
-            ctx.lineWidth = 2;
-
-            // Draw all vertical lines (including borders)
-            verticalLinePositions.forEach((pos) => {
-                const xCanvas = pos * imageCanvas.width;
-                ctx.beginPath();
-                ctx.moveTo(xCanvas, 0);
-                ctx.lineTo(xCanvas, imageCanvas.height);
-                ctx.stroke();
-            });
-
-            // Draw all horizontal lines (including borders)
-            horizontalLinePositions.forEach((pos) => {
-                const yCanvas = pos * imageCanvas.height;
-                ctx.beginPath();
-                ctx.moveTo(0, yCanvas);
-                ctx.lineTo(imageCanvas.width, yCanvas);
-                ctx.stroke();
-            });
-        }
-
-        // Handle image file selection
-        imageInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                fileNameDisplay.textContent = `Selected: ${file.name}`;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    originalImage.onload = () => {
-                        imageLoaded = true;
-                        selectedCells.clear(); // Clear selections when new image is loaded
-                        initializeGridLines(); // Initialize grid lines for the new image
-                        drawImageOnCanvas();
-                        // Reset cropped images when a new image is loaded
-                        croppedImages = [];
-                        nextStickerId = 0; // Reset ID counter
-                        updatePreview();
-                        downloadZipBtn.disabled = true;
-                        clearStickersBtn.disabled = true;
-                    };
-                    originalImage.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            } else {
-                fileNameDisplay.textContent = '';
-                imageLoaded = false;
-                selectedCells.clear(); // Clear selections when no image is loaded
-                ctx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
-                originalImage.src = '';
-                croppedImages = [];
-                nextStickerId = 0;
-                updatePreview();
-                downloadZipBtn.disabled = true;
-                clearStickersBtn.disabled = true;
-            }
-        });
-
-        // Handle grid size change
-        const gridRowsInput = document.getElementById('gridRows');
-        const gridColsInput = document.getElementById('gridCols');
-        const resetGridBtn = document.getElementById('resetGridBtn');
-
-        function updateGridSize() {
-            gridRows = parseInt(gridRowsInput.value);
-            gridCols = parseInt(gridColsInput.value);
-            selectedCells.clear(); // Clear selections when grid size changes
-            initializeGridLines(); // Re-initialize grid lines based on new grid size
-            drawGridLines(); // Redraw grid with new size
-        }
-
-        gridRowsInput.addEventListener('input', updateGridSize);
-        gridColsInput.addEventListener('input', updateGridSize);
-
-        resetGridBtn.addEventListener('click', () => {
-            selectedCells.clear(); // Clear selections when grid is reset
-            initializeGridLines(); // Reset to evenly distributed lines
-            drawGridLines(); // Redraw grid
-        });
-
-        // Add event listeners for the new buttons
-        const cropSelectedBtn = document.getElementById('cropSelectedBtn');
-        const clearSelectionBtn = document.getElementById('clearSelectionBtn');
-
-        cropSelectedBtn.addEventListener('click', () => {
-            if (selectedCells.size > 0) {
-                cropSelectedCells();
-            }
-        });
-
-        clearSelectionBtn.addEventListener('click', () => {
-            selectedCells.clear();
-            drawGridLines();
-        });
-
-        // Unified event handlers for both mouse and touch
-        function getEventCoordinates(e) {
-            if (e.touches && e.touches.length > 0) {
-                return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-            }
-            return { x: e.clientX, y: e.clientY };
-        }
-
-        // Function to find the nearest grid line to a point
-        function findNearestGridLine(x, y, threshold = 20) {
-            if (gridRows === 1 && gridCols === 1) return null;
-
-            let nearestLine = null;
-            let minDistance = threshold;
-
-            // Check vertical lines
-            verticalLinePositions.forEach((pos, index) => {
-                const lineX = pos * imageCanvas.width;
-                const distance = Math.abs(x - lineX);
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    nearestLine = {
-                        type: 'vertical',
-                        index: index,
-                        position: pos
-                    };
-                }
-            });
-
-            // Check horizontal lines
-            horizontalLinePositions.forEach((pos, index) => {
-                const lineY = pos * imageCanvas.height;
-                const distance = Math.abs(y - lineY);
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    nearestLine = {
-                        type: 'horizontal',
-                        index: index,
-                        position: pos
-                    };
-                }
-            });
-
-            return nearestLine;
-        }
-
-        function startDrag(e) {
-            if (!imageLoaded) return;
-
-            const rect = imageCanvas.getBoundingClientRect();
-            const coords = getEventCoordinates(e);
-            const canvasX = coords.x - rect.left;
-            const canvasY = coords.y - rect.top;
-
-            // Check if we're near a grid line
-            const nearestLine = findNearestGridLine(canvasX, canvasY);
-            
-            if (nearestLine) {
-                isDragging = true;
-                draggedLine = nearestLine;
-                dragStartCoord = { x: coords.x, y: coords.y };
-                dragStartLinePos = nearestLine.position;
-                
-                // Change cursor to indicate dragging
-                imageCanvas.style.cursor = nearestLine.type === 'vertical' ? 'col-resize' : 'row-resize';
-                
-                drawGridLines(); // Redraw with dragging style
-                e.preventDefault();
-            }
-        }
-
-        function updateDrag(e) {
-            if (!imageLoaded || !isDragging || !draggedLine) return;
-
-            const rect = imageCanvas.getBoundingClientRect();
-            const coords = getEventCoordinates(e);
-            const deltaX = coords.x - dragStartCoord.x;
-            const deltaY = coords.y - dragStartCoord.y;
-
-            if (draggedLine.type === 'horizontal') {
-                // Calculate new position relative to canvas height
-                let newPos = dragStartLinePos + (deltaY / rect.height);
-                // Clamp position between 0 and 1 for all lines (including borders)
-                newPos = Math.max(0, Math.min(1, newPos));
-                horizontalLinePositions[draggedLine.index] = newPos;
-            } else { // vertical
-                // Calculate new position relative to canvas width
-                let newPos = dragStartLinePos + (deltaX / rect.width);
-                // Clamp position between 0 and 1 for all lines (including borders)
-                newPos = Math.max(0, Math.min(1, newPos));
-                verticalLinePositions[draggedLine.index] = newPos;
-            }
-            drawGridLines(); // Redraw grid with updated line positions
-            e.preventDefault(); // Prevent scrolling on mobile
-        }
-
-        function endDrag(e) {
-            if (isDragging) {
-                isDragging = false;
-                draggedLine = null;
-                selectedCells.clear(); // Clear selections when grid lines are moved
-                imageCanvas.style.cursor = 'crosshair'; // Reset cursor
-                drawGridLines(); // Redraw with normal style
-            }
-        }
-
-        // Function to update cursor when hovering over grid lines
-        function updateCursor(e) {
-            if (!imageLoaded || isDragging || (gridRows === 1 && gridCols === 1)) return;
-
-            const rect = imageCanvas.getBoundingClientRect();
-            const coords = getEventCoordinates(e);
-            const canvasX = coords.x - rect.left;
-            const canvasY = coords.y - rect.top;
-
-            const nearestLine = findNearestGridLine(canvasX, canvasY);
-            
-            if (nearestLine) {
-                imageCanvas.style.cursor = nearestLine.type === 'vertical' ? 'col-resize' : 'row-resize';
-            } else {
-                imageCanvas.style.cursor = 'crosshair';
-            }
-        }
-
-        // Mouse events - attach to canvas instead of container
-        imageCanvas.addEventListener('mousedown', startDrag);
-        imageCanvas.addEventListener('mousemove', (e) => {
-            updateCursor(e);
-            updateDrag(e);
-        });
-        imageCanvas.addEventListener('mouseup', endDrag);
-        imageCanvas.addEventListener('mouseleave', endDrag); // End drag if mouse leaves canvas
-
-        // Touch events - attach to canvas instead of container
-        imageCanvas.addEventListener('touchstart', startDrag, { passive: false });
-        imageCanvas.addEventListener('touchmove', updateDrag, { passive: false });
-        imageCanvas.addEventListener('touchend', endDrag);
-        imageCanvas.addEventListener('touchcancel', endDrag);
-
-        // Handle canvas click/tap for cropping (when not dragging a line)
-        function handleCanvasClick(event) {
-            if (!imageLoaded || isDragging) { // Prevent selection if dragging a line
-                return;
-            }
-
-            const rect = imageCanvas.getBoundingClientRect();
-            const coords = getEventCoordinates(event);
-            
-            // Get click coordinates relative to the canvas (0 to canvas.width/height)
-            const clickXCanvas = coords.x - rect.left;
-            const clickYCanvas = coords.y - rect.top;
-
-            // Scale click coordinates to normalized positions (0 to 1)
-            const clickXNorm = clickXCanvas / imageCanvas.width;
-            const clickYNorm = clickYCanvas / imageCanvas.height;
-
-            if (gridRows === 1 && gridCols === 1) {
-                // Free crop mode: Clicking crops the entire image.
-                cropEntireImage();
-            } else {
-                // Determine which grid cell was clicked based on current line positions
-                // Find the row and column indices
-                let row = -1;
-                let col = -1;
-                
-                // Sort positions to ensure correct order
-                const sortedH = [...horizontalLinePositions].sort((a, b) => a - b);
-                const sortedV = [...verticalLinePositions].sort((a, b) => a - b);
-                
-                // Find row (between horizontal lines)
-                for (let i = 0; i < sortedH.length - 1; i++) {
-                    if (clickYNorm >= sortedH[i] && clickYNorm <= sortedH[i + 1]) {
-                        row = i;
-                        break;
-                    }
-                }
-                
-                // Find column (between vertical lines)
-                for (let i = 0; i < sortedV.length - 1; i++) {
-                    if (clickXNorm >= sortedV[i] && clickXNorm <= sortedV[i + 1]) {
-                        col = i;
-                        break;
-                    }
-                }
-                
-                // If click is within a valid grid cell, toggle selection
-                if (row >= 0 && col >= 0) {
-                    const cellId = `${row},${col}`;
-                    if (selectedCells.has(cellId)) {
-                        selectedCells.delete(cellId);
-                    } else {
-                        selectedCells.add(cellId);
-                    }
-                    drawGridLines(); // Redraw to show selection
-                }
-            }
-        }
-
-        // Function to crop the entire image (free crop mode)
-        function cropEntireImage() {
-            const tempCanvas = document.createElement('canvas');
-            const tempCtx = tempCanvas.getContext('2d');
-
-            tempCanvas.width = originalImage.width;
-            tempCanvas.height = originalImage.height;
-
-            tempCtx.drawImage(originalImage, 0, 0);
-
-            const croppedDataUrl = tempCanvas.toDataURL('image/png');
-            const newSticker = {
-                id: nextStickerId++,
-                dataUrl: croppedDataUrl,
-                filename: `sticker_${nextStickerId}.png`
-            };
-            croppedImages.push(newSticker);
-            updatePreview();
-        }
-
-        // Function to crop selected cells
-        function cropSelectedCells() {
-            if (selectedCells.size === 0) return;
-
-            const sortedH = [...horizontalLinePositions].sort((a, b) => a - b);
-            const sortedV = [...verticalLinePositions].sort((a, b) => a - b);
-
-            selectedCells.forEach(cellId => {
-                const [row, col] = cellId.split(',').map(Number);
-                
-                // Calculate crop boundaries
-                const cropX = sortedV[col] * originalImage.width;
-                const cropY = sortedH[row] * originalImage.height;
-                const cropWidth = (sortedV[col + 1] - sortedV[col]) * originalImage.width;
-                const cropHeight = (sortedH[row + 1] - sortedH[row]) * originalImage.height;
-
-                // Create a temporary canvas to draw the cropped image
-                const tempCanvas = document.createElement('canvas');
-                const tempCtx = tempCanvas.getContext('2d');
-
-                tempCanvas.width = cropWidth;
-                tempCanvas.height = cropHeight;
-
-                tempCtx.drawImage(
-                    originalImage,
-                    cropX, cropY, cropWidth, cropHeight, // Source rectangle
-                    0, 0, cropWidth, cropHeight          // Destination rectangle
-                );
-
-                // Get the cropped image as a Data URL
-                const croppedDataUrl = tempCanvas.toDataURL('image/png');
-                const newSticker = {
-                    id: nextStickerId++,
-                    dataUrl: croppedDataUrl,
-                    filename: `sticker_${nextStickerId}.png`
-                };
-                croppedImages.push(newSticker);
-            });
-
-            // Clear selections and update preview
-            selectedCells.clear();
-            drawGridLines();
-            updatePreview();
-        }
-
-        // Add both mouse and touch event listeners for canvas clicks
-        imageCanvas.addEventListener('click', handleCanvasClick);
-        imageCanvas.addEventListener('touchend', (e) => {
-            // Only handle touch end if we're not dragging and there's exactly one touch point
-            if (!isDragging && e.changedTouches.length === 1) {
-                // Create a synthetic event with touch coordinates
-                const touch = e.changedTouches[0];
-                const syntheticEvent = {
-                    touches: [touch],
-                    clientX: touch.clientX,
-                    clientY: touch.clientY
-                };
-                handleCanvasClick(syntheticEvent);
-            }
-        });
-
-        // Function to update the preview section
-        function updatePreview() {
-            croppedStickersPreview.innerHTML = ''; // Clear existing previews
-            if (croppedImages.length === 0) {
-                noStickersMessage.style.display = 'block';
-            } else {
-                noStickersMessage.style.display = 'none';
-                croppedImages.forEach((item) => {
-                    const stickerDiv = document.createElement('div');
-                    stickerDiv.classList.add('sticker-preview-item', 'selected'); // Always add 'selected' class
-                    stickerDiv.dataset.id = item.id; // Store the unique ID
-
-                    const img = document.createElement('img');
-                    img.src = item.dataUrl;
-                    img.alt = `Sticker ${item.id}`;
-                    img.classList.add('w-full', 'h-full', 'object-contain', 'rounded-lg');
-
-                    const checkmark = document.createElement('div');
-                    checkmark.classList.add('checkmark');
-                    checkmark.innerHTML = '&#10003;'; // Unicode checkmark
-
-                    stickerDiv.appendChild(img);
-                    stickerDiv.appendChild(checkmark);
-                    croppedStickersPreview.appendChild(stickerDiv);
-
-                    // Add click listener to remove sticker
-                    stickerDiv.addEventListener('click', () => {
-                        removeSticker(item.id);
-                    });
-                });
-            }
-            stickerCountSpan.textContent = croppedImages.length;
-            downloadZipBtn.disabled = croppedImages.length === 0;
-            clearStickersBtn.disabled = croppedImages.length === 0;
-        }
-
-        // Function to remove a sticker by its ID
-        function removeSticker(idToRemove) {
-            const initialLength = croppedImages.length;
-            croppedImages = croppedImages.filter(item => item.id !== idToRemove);
-            if (croppedImages.length < initialLength) {
-                updatePreview();
-                // Removed the popup message when removing sticker
-            }
-        }
-
-        // Handle Download ZIP button click
-        downloadZipBtn.addEventListener('click', async () => {
-            if (croppedImages.length === 0) {
-                showMessage("No stickers to download. Please select some first.");
-                return;
-            }
-
-            const zip = new JSZip();
-            croppedImages.forEach((item) => {
-                // Remove the "data:image/png;base64," prefix to get raw base64 data
-                const base64Data = item.dataUrl.split(',')[1];
-                zip.file(item.filename, base64Data, { base64: true });
-            });
-
-            try {
-                const content = await zip.generateAsync({ type: "blob" });
-                saveAs(content, "whatsapp_stickers.zip");
-            } catch (error) {
-                console.error("Error generating ZIP:", error);
-                showMessage("Failed to generate ZIP file. Please try again.");
-            }
-        });
-
-        // Handle Clear All button click
-        clearStickersBtn.addEventListener('click', () => {
-            croppedImages = [];
-            nextStickerId = 0; // Reset ID counter
-            updatePreview();
-            showMessage("All selected stickers cleared.");
-        });
-
-        // Initial update of preview and button states
-        updatePreview();
-
-        // Adjust canvas size and redraw on window resize
-        window.addEventListener('resize', () => {
-            if (imageLoaded) {
-                drawImageOnCanvas();
-            }
-        });
-
-        // Load default image on page load
-        window.addEventListener('load', () => {
-            // Create a canvas to draw the provided image
-            const defaultCanvas = document.createElement('canvas');
-            const defaultCtx = defaultCanvas.getContext('2d');
-            
-            // Set canvas size
-            defaultCanvas.width = 600;
-            defaultCanvas.height = 600;
-            
-            // Fill with white background
-            defaultCtx.fillStyle = 'white';
-            defaultCtx.fillRect(0, 0, defaultCanvas.width, defaultCanvas.height);
-            
-            // Draw a 3x3 grid of sample characters/emojis
-            const emojis = ['😀', '😂', '😍', '🤔', '😴', '🤗', '😲', '😎', '😊'];
-            const cellSize = 200;
-            
-            defaultCtx.font = '120px Arial';
-            defaultCtx.textAlign = 'center';
-            defaultCtx.textBaseline = 'middle';
-            
-            for (let row = 0; row < 3; row++) {
-                for (let col = 0; col < 3; col++) {
-                    const emoji = emojis[row * 3 + col];
-                    const x = col * cellSize + cellSize / 2;
-                    const y = row * cellSize + cellSize / 2;
-                    defaultCtx.fillText(emoji, x, y);
-                }
-            }
-            
-            // Convert to data URL and load as default image
-            const dataURL = defaultCanvas.toDataURL();
-            originalImage.onload = () => {
-                imageLoaded = true;
-                selectedCells.clear();
-                initializeGridLines();
-                drawImageOnCanvas();
-                fileNameDisplay.textContent = 'Default sample image loaded';
-            };
-            originalImage.src = dataURL;
-        });
-    </script>
+    <!-- Application Scripts -->
+    <script src="js/CanvasManager.js"></script>
+    <script src="js/GridManager.js"></script>
+    <script src="js/StickerManager.js"></script>
+    <script src="js/EventManager.js"></script>
+    <script src="js/MessageManager.js"></script>
+    <script src="js/StickerCropperApp.js"></script>
 </body>
 </html>
