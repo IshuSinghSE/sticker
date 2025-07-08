@@ -1,0 +1,158 @@
+# ==============================================
+# .gitignore for Sticker Cropper PWA Project
+# ==============================================
+
+# ===== Development Files =====
+# Temporary files from development
+*.tmp
+*.temp
+*.log
+*.cache
+*.swp
+*.swo
+*~
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.brackets.json
+.project
+.settings/
+.classpath
+
+# ===== Build and Development Tools =====
+# Node.js (if using build tools)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Build outputs
+dist/
+build/
+out/
+
+# ===== OS Generated Files =====
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+
+# Linux
+*~
+.directory
+.fuse_hidden*
+
+# ===== Development Images and Assets =====
+# Source images that are not part of the final app
+logo_crop.png
+*.psd
+*.ai
+*.sketch
+*.fig
+*.xd
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+
+# ===== Scripts and Tools =====
+# Development scripts (keep the useful ones, ignore temporary ones)
+icon-update-summary.sh
+optimize-check.sh
+generate-icons.sh
+
+# ===== Logs and Debug Files =====
+*.log
+debug.log
+error.log
+access.log
+combined.log
+
+# ===== Environment and Config Files =====
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ===== Testing Files =====
+coverage/
+.nyc_output
+test-results/
+playwright-report/
+
+# ===== Compressed Files =====
+*.zip
+*.tar.gz
+*.tar.bz2
+*.rar
+*.7z
+
+# ===== Temporary Upload Files =====
+uploads/
+temp/
+tmp/
+
+# ===== Security Files =====
+*.key
+*.pem
+*.p12
+*.pfx
+secrets.json
+
+# ===== Documentation Build Files =====
+docs/_build/
+docs/build/
+
+# ===== Service Worker Cache (development) =====
+# Only ignore if you have local cache files
+sw-cache/
+workbox-*/
+
+# ===== Screenshots (if they're just for development) =====
+# Uncomment if you don't want to include screenshots in the repo
+# screenshots/
+
+# ===== Keep Important Files =====
+# Make sure these files are always included
+!.gitignore
+!.gitkeep
+!README.md
+!LICENSE
+!manifest.json
+!sw.js
+!robots.txt
+!sitemap.xml
+!favicon.ico
+!browserconfig.xml
+!CNAME
+!.htaccess
+
+# ===== Project Specific =====
+# Any other files specific to your project that should be ignored
+*.draft
+*.test
+test-images/
+dev-assets/
+*.sh

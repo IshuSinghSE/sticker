@@ -1,0 +1,25 @@
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://sticker.theishu.xyz/sitemap.xml
+
+# Allow crawling of static assets
+Allow: /css/
+Allow: /js/
+Allow: /icons/
+Allow: /manifest.json
+Allow: /sw.js
+Allow: /sticker_sheet.png
+
+# Block unnecessary files
+Disallow: /generate-icons.sh
+Disallow: /logo_crop.png
+Disallow: /*.zip$
+Disallow: /*.tmp$
+
+# Crawl delay (optional)
+Crawl-delay: 1
+
+# SEO-friendly caching headers
+# Cache-Control: public, max-age=31536000

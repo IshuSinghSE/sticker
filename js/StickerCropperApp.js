@@ -8,6 +8,8 @@ class StickerCropperApp {
     this.stickerManager = null;
     this.eventManager = null;
     this.messageManager = null;
+    this.deferredPrompt = null;
+    this.isOnline = navigator.onLine;
     
     this.elements = {};
     this.initialize();
@@ -17,6 +19,8 @@ class StickerCropperApp {
     this.setupElements();
     this.setupManagers();
     this.setupEventListeners();
+    this.setupPWA();
+    this.setupOfflineSupport();
     this.loadDefaultImage();
   }
 
@@ -314,6 +318,121 @@ class StickerCropperApp {
     const dataURL = defaultCanvas.toDataURL();
     this.loadImage(dataURL);
     this.elements.fileName.textContent = `Default ${rows}×${cols} emoji grid loaded`;
+  }
+
+  setupPWA() {
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('SW registered: ', registration);
+            
+            // Check for updates
+            registration.addEventListener('updatefound', () => {
+              const newWorker = registration.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  this.showUpdateAvailable();
+                }
+              });
+            });
+          })
+          .catch((registrationError) => {
+            console.log('SW registration failed: ', registrationError);
+          });
+      });
+    }
+
+    // Handle install prompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this.deferredPrompt = e;
+      this.showInstallButton();
+    });
+
+    // Handle successful installation
+    window.addEventListener('appinstalled', () => {
+      console.log('PWA was installed');
+      this.deferredPrompt = null;
+      this.hideInstallButton();
+    });
+  }
+
+  setupOfflineSupport() {
+    // Handle online/offline status
+    window.addEventListener('online', () => {
+      this.isOnline = true;
+      this.showConnectionStatus('back online', 'success');
+    });
+
+    window.addEventListener('offline', () => {
+      this.isOnline = false;
+      this.showConnectionStatus('offline', 'warning');
+    });
+  }
+
+  showInstallButton() {
+    // Create install button if it doesn't exist
+    if (!document.getElementById('installButton')) {
+      const installButton = document.createElement('button');
+      installButton.id = 'installButton';
+      installButton.className = 'fixed bottom-4 right-4 bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg shadow-lg transition-all duration-200 hover:scale-105 z-50';
+      installButton.innerHTML = '📱 Install App';
+      installButton.onclick = () => this.installApp();
+      document.body.appendChild(installButton);
+    }
+  }
+
+  hideInstallButton() {
+    const installButton = document.getElementById('installButton');
+    if (installButton) {
+      installButton.remove();
+    }
+  }
+
+  async installApp() {
+    if (this.deferredPrompt) {
+      this.deferredPrompt.prompt();
+      const { outcome } = await this.deferredPrompt.userChoice;
+      
+      if (outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+      } else {
+        console.log('User dismissed the install prompt');
+      }
+      
+      this.deferredPrompt = null;
+      this.hideInstallButton();
+    }
+  }
+
+  showUpdateAvailable() {
+    this.messageManager.showConfirm(
+      'A new version of the app is available. Would you like to update now?',
+      () => {
+        window.location.reload();
+      }
+    );
+  }
+
+  showConnectionStatus(status, type) {
+    const statusElement = document.getElementById('connectionStatus');
+    if (statusElement) {
+      statusElement.remove();
+    }
+
+    const statusDiv = document.createElement('div');
+    statusDiv.id = 'connectionStatus';
+    statusDiv.className = `fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg text-white z-50 transition-all duration-300 ${
+      type === 'success' ? 'bg-green-500' : 'bg-yellow-500'
+    }`;
+    statusDiv.textContent = `You are ${status}`;
+    document.body.appendChild(statusDiv);
+
+    setTimeout(() => {
+      statusDiv.remove();
+    }, 3000);
   }
 }
 
