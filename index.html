@@ -35,12 +35,14 @@
             border-radius: 0.5rem; /* rounded-lg */
             background-color: #f8fafc; /* bg-gray-50 */
             display: block;
-            width: 100%;
+            margin: 0 auto; /* Center the canvas */
+            max-width: 100%; /* Responsive but not forced to 100% */
             height: auto; /* Maintain aspect ratio */
-            max-height: 70vh; /* Limit height for larger screens */
             object-fit: contain; /* Ensure image fits within canvas without distortion */
             position: relative; /* Needed for absolute positioning of draggable lines */
             cursor: crosshair;
+            touch-action: none; /* Prevent default touch behaviors */
+            user-select: none; /* Prevent text selection */
         }
         .button-primary {
             background-color: #4f46e5; /* indigo-600 */
@@ -121,33 +123,6 @@
             border: none;
         }
 
-        /* Styles for draggable lines */
-        .draggable-line {
-            position: absolute;
-            background-color: rgba(0, 0, 0, 0.7); /* Darker for better visibility */
-            z-index: 10;
-            cursor: grab;
-        }
-        .draggable-line.horizontal {
-            width: 100%;
-            height: 4px; /* Thicker for easier grabbing */
-            left: 0;
-            transform: translateY(-50%);
-        }
-        .draggable-line.vertical {
-            height: 100%;
-            width: 4px; /* Thicker for easier grabbing */
-            top: 0;
-            transform: translateX(-50%);
-        }
-        .draggable-line:hover {
-            background-color: #4f46e5; /* Highlight on hover */
-            cursor: grab;
-        }
-        .draggable-line.dragging {
-            cursor: grabbing;
-        }
-
         /* Styles for cropped sticker preview items */
         .sticker-preview-item {
             position: relative;
@@ -204,25 +179,33 @@
 
         <!-- Canvas and Controls Section -->
         <div class="flex flex-col items-center gap-4">
-            <div id="canvasContainer" class="relative w-full max-w-full h-auto rounded-lg shadow-md">
+            <div id="canvasContainer" class="relative w-full max-w-full h-auto rounded-lg shadow-md" style="touch-action: none; user-select: none;">
                 <canvas id="imageCanvas"></canvas>
                 <!-- Draggable lines will be appended here by JS -->
             </div>
 
-            <div class="grid-selector flex items-center gap-4">
-                <label for="gridSize" class="text-gray-700 font-semibold">Select Grid:</label>
-                <select id="gridSize" class="rounded-lg border border-gray-300 py-2 px-4 focus:ring-indigo-500 focus:border-indigo-500">
-                    <option value="1x1">No Grid (Free Crop)</option>
-                    <option value="2x2">2x2</option>
-                    <option value="3x3" selected>3x3</option>
-                    <option value="4x4">4x4</option>
-                    <option value="5x5">5x5</option>
-                    <option value="6x6">6x6</option>
-                </select>
+            <div class="grid-selector flex flex-col sm:flex-row items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <label for="gridRows" class="text-gray-700 font-semibold">Rows:</label>
+                    <input type="number" id="gridRows" min="1" max="10" value="3" class="w-16 rounded-lg border border-gray-300 py-1 px-2 text-center focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div class="flex items-center gap-2">
+                    <label for="gridCols" class="text-gray-700 font-semibold">Columns:</label>
+                    <input type="number" id="gridCols" min="1" max="10" value="3" class="w-16 rounded-lg border border-gray-300 py-1 px-2 text-center focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <button id="resetGridBtn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700 font-medium transition-colors">
+                    Reset Grid
+                </button>
+                <button id="cropSelectedBtn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors">
+                    Crop Selected
+                </button>
+                <button id="clearSelectionBtn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors">
+                    Clear Selection
+                </button>
             </div>
             <p class="text-sm text-gray-500 mt-2">
-                Click on the image to select a sticker within the grid. <br>
-                Drag the grid lines to adjust crop areas. Click a selected sticker below to remove it.
+                Click/tap on grid cells to select them (blue highlight). Use "Crop Selected" to create stickers from selected cells. <br>
+                Drag the blue grid lines to adjust crop areas. Click/tap a selected sticker below to remove it.
             </p>
         </div>
 
@@ -262,7 +245,6 @@
         const fileNameDisplay = document.getElementById('fileName');
         const imageCanvas = document.getElementById('imageCanvas');
         const ctx = imageCanvas.getContext('2d');
-        const gridSizeSelect = document.getElementById('gridSize');
         const croppedStickersPreview = document.getElementById('croppedStickersPreview');
         const stickerCountSpan = document.getElementById('stickerCount');
         const downloadZipBtn = document.getElementById('downloadZipBtn');
@@ -276,6 +258,7 @@
         let gridCols = 3;
         let imageLoaded = false;
         let nextStickerId = 0; // Unique ID for each cropped sticker
+        let selectedCells = new Set(); // Track selected grid cells
 
         // Store grid line positions relative to the image's original dimensions
         // These will be scaled to canvas dimensions for drawing and interaction
@@ -291,22 +274,32 @@
         function drawImageOnCanvas() {
             if (!originalImage.src) return;
 
-            const maxWidth = canvasContainer.clientWidth;
-            const maxHeight = window.innerHeight * 0.7;
+            // Set canvas dimensions to match the original image dimensions
+            // This eliminates any scaling issues
+            const maxWidth = Math.min(canvasContainer.clientWidth, 800); // Limit max width
+            const maxHeight = Math.min(window.innerHeight * 0.7, 600); // Limit max height
 
             const aspectRatio = originalImage.width / originalImage.height;
+            let canvasWidth = originalImage.width;
+            let canvasHeight = originalImage.height;
 
-            let newWidth = maxWidth;
-            let newHeight = maxWidth / aspectRatio;
-
-            if (newHeight > maxHeight) {
-                newHeight = maxHeight;
-                newWidth = maxHeight * aspectRatio;
+            // Scale down if image is too large
+            if (canvasWidth > maxWidth) {
+                canvasWidth = maxWidth;
+                canvasHeight = canvasWidth / aspectRatio;
+            }
+            if (canvasHeight > maxHeight) {
+                canvasHeight = maxHeight;
+                canvasWidth = canvasHeight * aspectRatio;
             }
 
-            // Ensure the canvas dimensions are integers
-            imageCanvas.width = Math.floor(newWidth);
-            imageCanvas.height = Math.floor(newHeight);
+            // Set canvas size to match display size exactly
+            imageCanvas.width = Math.floor(canvasWidth);
+            imageCanvas.height = Math.floor(canvasHeight);
+            
+            // Also set CSS dimensions to match canvas dimensions exactly
+            imageCanvas.style.width = `${canvasWidth}px`;
+            imageCanvas.style.height = `${canvasHeight}px`;
 
             ctx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
             ctx.drawImage(originalImage, 0, 0, imageCanvas.width, imageCanvas.height);
@@ -319,62 +312,61 @@
             verticalLinePositions = [];
 
             // Calculate initial positions based on even distribution
-            for (let i = 1; i < gridRows; i++) {
+            // Include border lines (0 and 1) plus internal lines
+            for (let i = 0; i <= gridRows; i++) {
                 horizontalLinePositions.push(i / gridRows); // Percentage of height
             }
-            for (let i = 1; i < gridCols; i++) {
+            for (let i = 0; i <= gridCols; i++) {
                 verticalLinePositions.push(i / gridCols); // Percentage of width
             }
         }
 
-        // Function to draw grid lines on the canvas and create draggable DOM elements
+        // Function to draw grid lines on the canvas
         function drawGridLines() {
             if (!imageLoaded) return;
 
-            // Clear previous grid lines drawn by canvas and remove old draggable elements
+            // Clear previous grid lines drawn by canvas
             ctx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
             ctx.drawImage(originalImage, 0, 0, imageCanvas.width, imageCanvas.height);
 
-            // Remove existing draggable lines
-            document.querySelectorAll('.draggable-line').forEach(line => line.remove());
+            if (gridRows === 1 && gridCols === 1) return; // No grid lines in free crop mode
 
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)'; // Default line color
-            ctx.lineWidth = 1;
+            // Draw selected cells (semi-transparent overlay)
+            ctx.save();
+            ctx.fillStyle = 'rgba(79, 70, 229, 0.3)';
+            selectedCells.forEach(cellId => {
+                const [row, col] = cellId.split(',').map(Number);
+                
+                // Calculate actual positions on canvas
+                const x1 = verticalLinePositions[col] * imageCanvas.width;
+                const y1 = horizontalLinePositions[row] * imageCanvas.height;
+                const x2 = verticalLinePositions[col + 1] * imageCanvas.width;
+                const y2 = horizontalLinePositions[row + 1] * imageCanvas.height;
+                
+                ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+            });
+            ctx.restore();
 
-            // Draw vertical lines and create draggable elements
-            verticalLinePositions.forEach((pos, index) => {
+            // Only draw blue interactive lines, no gray background grid
+            ctx.strokeStyle = isDragging ? 'rgba(79, 70, 229, 1)' : 'rgba(79, 70, 229, 0.8)';
+            ctx.lineWidth = 2;
+
+            // Draw all vertical lines (including borders)
+            verticalLinePositions.forEach((pos) => {
                 const xCanvas = pos * imageCanvas.width;
                 ctx.beginPath();
                 ctx.moveTo(xCanvas, 0);
                 ctx.lineTo(xCanvas, imageCanvas.height);
                 ctx.stroke();
-
-                if (gridRows > 1 || gridCols > 1) { // Only add draggable lines if a grid is active
-                    const lineDiv = document.createElement('div');
-                    lineDiv.classList.add('draggable-line', 'vertical');
-                    lineDiv.style.left = `${xCanvas}px`;
-                    lineDiv.dataset.index = index;
-                    lineDiv.dataset.type = 'vertical';
-                    canvasContainer.appendChild(lineDiv);
-                }
             });
 
-            // Draw horizontal lines and create draggable elements
-            horizontalLinePositions.forEach((pos, index) => {
+            // Draw all horizontal lines (including borders)
+            horizontalLinePositions.forEach((pos) => {
                 const yCanvas = pos * imageCanvas.height;
                 ctx.beginPath();
                 ctx.moveTo(0, yCanvas);
                 ctx.lineTo(imageCanvas.width, yCanvas);
                 ctx.stroke();
-
-                if (gridRows > 1 || gridCols > 1) { // Only add draggable lines if a grid is active
-                    const lineDiv = document.createElement('div');
-                    lineDiv.classList.add('draggable-line', 'horizontal');
-                    lineDiv.style.top = `${yCanvas}px`;
-                    lineDiv.dataset.index = index;
-                    lineDiv.dataset.type = 'horizontal';
-                    canvasContainer.appendChild(lineDiv);
-                }
             });
         }
 
@@ -387,6 +379,7 @@
                 reader.onload = (e) => {
                     originalImage.onload = () => {
                         imageLoaded = true;
+                        selectedCells.clear(); // Clear selections when new image is loaded
                         initializeGridLines(); // Initialize grid lines for the new image
                         drawImageOnCanvas();
                         // Reset cropped images when a new image is loaded
@@ -402,6 +395,7 @@
             } else {
                 fileNameDisplay.textContent = '';
                 imageLoaded = false;
+                selectedCells.clear(); // Clear selections when no image is loaded
                 ctx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
                 originalImage.src = '';
                 croppedImages = [];
@@ -413,169 +407,319 @@
         });
 
         // Handle grid size change
-        gridSizeSelect.addEventListener('change', (event) => {
-            const value = event.target.value;
-            if (value === '1x1') {
-                gridRows = 1;
-                gridCols = 1;
-            } else {
-                [gridRows, gridCols] = value.split('x').map(Number);
-            }
+        const gridRowsInput = document.getElementById('gridRows');
+        const gridColsInput = document.getElementById('gridCols');
+        const resetGridBtn = document.getElementById('resetGridBtn');
+
+        function updateGridSize() {
+            gridRows = parseInt(gridRowsInput.value);
+            gridCols = parseInt(gridColsInput.value);
+            selectedCells.clear(); // Clear selections when grid size changes
             initializeGridLines(); // Re-initialize grid lines based on new grid size
-            drawGridLines(); // Redraw grid with new size or no grid
+            drawGridLines(); // Redraw grid with new size
+        }
+
+        gridRowsInput.addEventListener('input', updateGridSize);
+        gridColsInput.addEventListener('input', updateGridSize);
+
+        resetGridBtn.addEventListener('click', () => {
+            selectedCells.clear(); // Clear selections when grid is reset
+            initializeGridLines(); // Reset to evenly distributed lines
+            drawGridLines(); // Redraw grid
         });
 
-        // Mouse down event for dragging lines
-        canvasContainer.addEventListener('mousedown', (e) => {
+        // Add event listeners for the new buttons
+        const cropSelectedBtn = document.getElementById('cropSelectedBtn');
+        const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+
+        cropSelectedBtn.addEventListener('click', () => {
+            if (selectedCells.size > 0) {
+                cropSelectedCells();
+            }
+        });
+
+        clearSelectionBtn.addEventListener('click', () => {
+            selectedCells.clear();
+            drawGridLines();
+        });
+
+        // Unified event handlers for both mouse and touch
+        function getEventCoordinates(e) {
+            if (e.touches && e.touches.length > 0) {
+                return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            }
+            return { x: e.clientX, y: e.clientY };
+        }
+
+        // Function to find the nearest grid line to a point
+        function findNearestGridLine(x, y, threshold = 20) {
+            if (gridRows === 1 && gridCols === 1) return null;
+
+            let nearestLine = null;
+            let minDistance = threshold;
+
+            // Check vertical lines
+            verticalLinePositions.forEach((pos, index) => {
+                const lineX = pos * imageCanvas.width;
+                const distance = Math.abs(x - lineX);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearestLine = {
+                        type: 'vertical',
+                        index: index,
+                        position: pos
+                    };
+                }
+            });
+
+            // Check horizontal lines
+            horizontalLinePositions.forEach((pos, index) => {
+                const lineY = pos * imageCanvas.height;
+                const distance = Math.abs(y - lineY);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearestLine = {
+                        type: 'horizontal',
+                        index: index,
+                        position: pos
+                    };
+                }
+            });
+
+            return nearestLine;
+        }
+
+        function startDrag(e) {
             if (!imageLoaded) return;
 
-            const target = e.target;
-            if (target.classList.contains('draggable-line')) {
+            const rect = imageCanvas.getBoundingClientRect();
+            const coords = getEventCoordinates(e);
+            const canvasX = coords.x - rect.left;
+            const canvasY = coords.y - rect.top;
+
+            // Check if we're near a grid line
+            const nearestLine = findNearestGridLine(canvasX, canvasY);
+            
+            if (nearestLine) {
                 isDragging = true;
-                draggedLine = target;
-                draggedLine.classList.add('dragging');
-                dragStartCoord = { x: e.clientX, y: e.clientY };
-
-                const index = parseInt(draggedLine.dataset.index);
-                if (draggedLine.dataset.type === 'horizontal') {
-                    dragStartLinePos = horizontalLinePositions[index];
-                } else {
-                    dragStartLinePos = verticalLinePositions[index];
-                }
-                e.preventDefault(); // Prevent default browser drag behavior
+                draggedLine = nearestLine;
+                dragStartCoord = { x: coords.x, y: coords.y };
+                dragStartLinePos = nearestLine.position;
+                
+                // Change cursor to indicate dragging
+                imageCanvas.style.cursor = nearestLine.type === 'vertical' ? 'col-resize' : 'row-resize';
+                
+                drawGridLines(); // Redraw with dragging style
+                e.preventDefault();
             }
-        });
+        }
 
-        // Mouse move event for dragging lines
-        canvasContainer.addEventListener('mousemove', (e) => {
-            if (!imageLoaded) return;
+        function updateDrag(e) {
+            if (!imageLoaded || !isDragging || !draggedLine) return;
 
-            if (isDragging && draggedLine) {
-                const rect = imageCanvas.getBoundingClientRect();
-                const deltaX = e.clientX - dragStartCoord.x;
-                const deltaY = e.clientY - dragStartCoord.y;
+            const rect = imageCanvas.getBoundingClientRect();
+            const coords = getEventCoordinates(e);
+            const deltaX = coords.x - dragStartCoord.x;
+            const deltaY = coords.y - dragStartCoord.y;
 
-                if (draggedLine.dataset.type === 'horizontal') {
-                    // Calculate new position relative to canvas height
-                    let newPos = dragStartLinePos + (deltaY / rect.height);
-                    // Clamp position between 0 and 1 (exclusive of 0 and 1 for lines)
-                    newPos = Math.max(0.01, Math.min(0.99, newPos));
-                    horizontalLinePositions[parseInt(draggedLine.dataset.index)] = newPos;
-                } else { // vertical
-                    // Calculate new position relative to canvas width
-                    let newPos = dragStartLinePos + (deltaX / rect.width);
-                    // Clamp position between 0 and 1 (exclusive of 0 and 1 for lines)
-                    newPos = Math.max(0.01, Math.min(0.99, newPos));
-                    verticalLinePositions[parseInt(draggedLine.dataset.index)] = newPos;
-                }
-                drawGridLines(); // Redraw grid with updated line positions
+            if (draggedLine.type === 'horizontal') {
+                // Calculate new position relative to canvas height
+                let newPos = dragStartLinePos + (deltaY / rect.height);
+                // Clamp position between 0 and 1 for all lines (including borders)
+                newPos = Math.max(0, Math.min(1, newPos));
+                horizontalLinePositions[draggedLine.index] = newPos;
+            } else { // vertical
+                // Calculate new position relative to canvas width
+                let newPos = dragStartLinePos + (deltaX / rect.width);
+                // Clamp position between 0 and 1 for all lines (including borders)
+                newPos = Math.max(0, Math.min(1, newPos));
+                verticalLinePositions[draggedLine.index] = newPos;
             }
-        });
+            drawGridLines(); // Redraw grid with updated line positions
+            e.preventDefault(); // Prevent scrolling on mobile
+        }
 
-        // Mouse up event to stop dragging
-        canvasContainer.addEventListener('mouseup', () => {
-            if (isDragging && draggedLine) {
+        function endDrag(e) {
+            if (isDragging) {
                 isDragging = false;
-                draggedLine.classList.remove('dragging');
                 draggedLine = null;
+                selectedCells.clear(); // Clear selections when grid lines are moved
+                imageCanvas.style.cursor = 'crosshair'; // Reset cursor
+                drawGridLines(); // Redraw with normal style
             }
-        });
+        }
 
-        // Handle canvas click for cropping (when not dragging a line)
-        imageCanvas.addEventListener('click', (event) => {
-            if (!imageLoaded || isDragging) { // Prevent cropping if dragging a line
+        // Function to update cursor when hovering over grid lines
+        function updateCursor(e) {
+            if (!imageLoaded || isDragging || (gridRows === 1 && gridCols === 1)) return;
+
+            const rect = imageCanvas.getBoundingClientRect();
+            const coords = getEventCoordinates(e);
+            const canvasX = coords.x - rect.left;
+            const canvasY = coords.y - rect.top;
+
+            const nearestLine = findNearestGridLine(canvasX, canvasY);
+            
+            if (nearestLine) {
+                imageCanvas.style.cursor = nearestLine.type === 'vertical' ? 'col-resize' : 'row-resize';
+            } else {
+                imageCanvas.style.cursor = 'crosshair';
+            }
+        }
+
+        // Mouse events - attach to canvas instead of container
+        imageCanvas.addEventListener('mousedown', startDrag);
+        imageCanvas.addEventListener('mousemove', (e) => {
+            updateCursor(e);
+            updateDrag(e);
+        });
+        imageCanvas.addEventListener('mouseup', endDrag);
+        imageCanvas.addEventListener('mouseleave', endDrag); // End drag if mouse leaves canvas
+
+        // Touch events - attach to canvas instead of container
+        imageCanvas.addEventListener('touchstart', startDrag, { passive: false });
+        imageCanvas.addEventListener('touchmove', updateDrag, { passive: false });
+        imageCanvas.addEventListener('touchend', endDrag);
+        imageCanvas.addEventListener('touchcancel', endDrag);
+
+        // Handle canvas click/tap for cropping (when not dragging a line)
+        function handleCanvasClick(event) {
+            if (!imageLoaded || isDragging) { // Prevent selection if dragging a line
                 return;
             }
 
             const rect = imageCanvas.getBoundingClientRect();
+            const coords = getEventCoordinates(event);
+            
             // Get click coordinates relative to the canvas (0 to canvas.width/height)
-            const clickXCanvas = event.clientX - rect.left;
-            const clickYCanvas = event.clientY - rect.top;
+            const clickXCanvas = coords.x - rect.left;
+            const clickYCanvas = coords.y - rect.top;
 
-            // Scale click coordinates to original image dimensions
-            const scaleX = originalImage.width / imageCanvas.width;
-            const scaleY = originalImage.height / imageCanvas.height;
-            const clickXOriginal = clickXCanvas * scaleX;
-            const clickYOriginal = clickYCanvas * scaleY;
-
-            let cropX, cropY, cropWidth, cropHeight;
+            // Scale click coordinates to normalized positions (0 to 1)
+            const clickXNorm = clickXCanvas / imageCanvas.width;
+            const clickYNorm = clickYCanvas / imageCanvas.height;
 
             if (gridRows === 1 && gridCols === 1) {
                 // Free crop mode: Clicking crops the entire image.
-                cropX = 0;
-                cropY = 0;
-                cropWidth = originalImage.width;
-                cropHeight = originalImage.height;
+                cropEntireImage();
             } else {
                 // Determine which grid cell was clicked based on current line positions
-                // Find the horizontal boundaries
-                let topBoundary = 0;
-                let bottomBoundary = originalImage.height;
-                // Sort horizontal line positions to ensure correct order
+                // Find the row and column indices
+                let row = -1;
+                let col = -1;
+                
+                // Sort positions to ensure correct order
                 const sortedH = [...horizontalLinePositions].sort((a, b) => a - b);
-                for (let i = 0; i < sortedH.length; i++) {
-                    const lineYOriginal = sortedH[i] * originalImage.height;
-                    if (clickYOriginal < lineYOriginal) {
-                        bottomBoundary = lineYOriginal;
-                        break;
-                    }
-                    topBoundary = lineYOriginal;
-                }
-
-                // Find the vertical boundaries
-                let leftBoundary = 0;
-                let rightBoundary = originalImage.width;
-                // Sort vertical line positions to ensure correct order
                 const sortedV = [...verticalLinePositions].sort((a, b) => a - b);
-                for (let i = 0; i < sortedV.length; i++) {
-                    const lineXOriginal = sortedV[i] * originalImage.width;
-                    if (clickXOriginal < lineXOriginal) {
-                        rightBoundary = lineXOriginal;
+                
+                // Find row (between horizontal lines)
+                for (let i = 0; i < sortedH.length - 1; i++) {
+                    if (clickYNorm >= sortedH[i] && clickYNorm <= sortedH[i + 1]) {
+                        row = i;
                         break;
                     }
-                    leftBoundary = lineXOriginal;
                 }
-
-                cropX = leftBoundary;
-                cropY = topBoundary;
-                cropWidth = rightBoundary - leftBoundary;
-                cropHeight = bottomBoundary - topBoundary;
-
-                // Draw a temporary highlight on the selected cell
-                ctx.strokeStyle = 'red';
-                ctx.lineWidth = 4;
-                ctx.strokeRect(
-                    cropX / scaleX, // Convert original coords back to canvas coords for drawing
-                    cropY / scaleY,
-                    cropWidth / scaleX,
-                    cropHeight / scaleY
-                );
-                // Remove highlight after a short delay
-                setTimeout(drawGridLines, 300);
+                
+                // Find column (between vertical lines)
+                for (let i = 0; i < sortedV.length - 1; i++) {
+                    if (clickXNorm >= sortedV[i] && clickXNorm <= sortedV[i + 1]) {
+                        col = i;
+                        break;
+                    }
+                }
+                
+                // If click is within a valid grid cell, toggle selection
+                if (row >= 0 && col >= 0) {
+                    const cellId = `${row},${col}`;
+                    if (selectedCells.has(cellId)) {
+                        selectedCells.delete(cellId);
+                    } else {
+                        selectedCells.add(cellId);
+                    }
+                    drawGridLines(); // Redraw to show selection
+                }
             }
+        }
 
-            // Create a temporary canvas to draw the cropped image
+        // Function to crop the entire image (free crop mode)
+        function cropEntireImage() {
             const tempCanvas = document.createElement('canvas');
             const tempCtx = tempCanvas.getContext('2d');
 
-            tempCanvas.width = cropWidth;
-            tempCanvas.height = cropHeight;
+            tempCanvas.width = originalImage.width;
+            tempCanvas.height = originalImage.height;
 
-            tempCtx.drawImage(
-                originalImage,
-                cropX, cropY, cropWidth, cropHeight, // Source rectangle
-                0, 0, cropWidth, cropHeight          // Destination rectangle
-            );
+            tempCtx.drawImage(originalImage, 0, 0);
 
-            // Get the cropped image as a Data URL
-            const croppedDataUrl = tempCanvas.toDataURL('image/png'); // PNG for transparency if needed
+            const croppedDataUrl = tempCanvas.toDataURL('image/png');
             const newSticker = {
-                id: nextStickerId++, // Assign a unique ID
+                id: nextStickerId++,
                 dataUrl: croppedDataUrl,
                 filename: `sticker_${nextStickerId}.png`
             };
             croppedImages.push(newSticker);
             updatePreview();
+        }
+
+        // Function to crop selected cells
+        function cropSelectedCells() {
+            if (selectedCells.size === 0) return;
+
+            const sortedH = [...horizontalLinePositions].sort((a, b) => a - b);
+            const sortedV = [...verticalLinePositions].sort((a, b) => a - b);
+
+            selectedCells.forEach(cellId => {
+                const [row, col] = cellId.split(',').map(Number);
+                
+                // Calculate crop boundaries
+                const cropX = sortedV[col] * originalImage.width;
+                const cropY = sortedH[row] * originalImage.height;
+                const cropWidth = (sortedV[col + 1] - sortedV[col]) * originalImage.width;
+                const cropHeight = (sortedH[row + 1] - sortedH[row]) * originalImage.height;
+
+                // Create a temporary canvas to draw the cropped image
+                const tempCanvas = document.createElement('canvas');
+                const tempCtx = tempCanvas.getContext('2d');
+
+                tempCanvas.width = cropWidth;
+                tempCanvas.height = cropHeight;
+
+                tempCtx.drawImage(
+                    originalImage,
+                    cropX, cropY, cropWidth, cropHeight, // Source rectangle
+                    0, 0, cropWidth, cropHeight          // Destination rectangle
+                );
+
+                // Get the cropped image as a Data URL
+                const croppedDataUrl = tempCanvas.toDataURL('image/png');
+                const newSticker = {
+                    id: nextStickerId++,
+                    dataUrl: croppedDataUrl,
+                    filename: `sticker_${nextStickerId}.png`
+                };
+                croppedImages.push(newSticker);
+            });
+
+            // Clear selections and update preview
+            selectedCells.clear();
+            drawGridLines();
+            updatePreview();
+        }
+
+        // Add both mouse and touch event listeners for canvas clicks
+        imageCanvas.addEventListener('click', handleCanvasClick);
+        imageCanvas.addEventListener('touchend', (e) => {
+            // Only handle touch end if we're not dragging and there's exactly one touch point
+            if (!isDragging && e.changedTouches.length === 1) {
+                // Create a synthetic event with touch coordinates
+                const touch = e.changedTouches[0];
+                const syntheticEvent = {
+                    touches: [touch],
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                };
+                handleCanvasClick(syntheticEvent);
+            }
         });
 
         // Function to update the preview section
@@ -620,7 +764,7 @@
             croppedImages = croppedImages.filter(item => item.id !== idToRemove);
             if (croppedImages.length < initialLength) {
                 updatePreview();
-                showMessage(`Sticker removed from pack.`);
+                // Removed the popup message when removing sticker
             }
         }
 
@@ -663,6 +807,49 @@
             if (imageLoaded) {
                 drawImageOnCanvas();
             }
+        });
+
+        // Load default image on page load
+        window.addEventListener('load', () => {
+            // Create a canvas to draw the provided image
+            const defaultCanvas = document.createElement('canvas');
+            const defaultCtx = defaultCanvas.getContext('2d');
+            
+            // Set canvas size
+            defaultCanvas.width = 600;
+            defaultCanvas.height = 600;
+            
+            // Fill with white background
+            defaultCtx.fillStyle = 'white';
+            defaultCtx.fillRect(0, 0, defaultCanvas.width, defaultCanvas.height);
+            
+            // Draw a 3x3 grid of sample characters/emojis
+            const emojis = ['😀', '😂', '😍', '🤔', '😴', '🤗', '😲', '😎', '😊'];
+            const cellSize = 200;
+            
+            defaultCtx.font = '120px Arial';
+            defaultCtx.textAlign = 'center';
+            defaultCtx.textBaseline = 'middle';
+            
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 3; col++) {
+                    const emoji = emojis[row * 3 + col];
+                    const x = col * cellSize + cellSize / 2;
+                    const y = row * cellSize + cellSize / 2;
+                    defaultCtx.fillText(emoji, x, y);
+                }
+            }
+            
+            // Convert to data URL and load as default image
+            const dataURL = defaultCanvas.toDataURL();
+            originalImage.onload = () => {
+                imageLoaded = true;
+                selectedCells.clear();
+                initializeGridLines();
+                drawImageOnCanvas();
+                fileNameDisplay.textContent = 'Default sample image loaded';
+            };
+            originalImage.src = dataURL;
         });
     </script>
 </body>
