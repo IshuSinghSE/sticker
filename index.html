@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sticker Cropper</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 1rem; /* rounded-xl */
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-xl */
+            padding: 1.5rem; /* p-6 */
+            max-width: 90%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem; /* gap-6 */
+        }
+        canvas {
+            border: 2px solid #e2e8f0; /* border-gray-200 */
+            border-radius: 0.5rem; /* rounded-lg */
+            background-color: #f8fafc; /* bg-gray-50 */
+            display: block;
+            width: 100%;
+            height: auto; /* Maintain aspect ratio */
+            max-height: 70vh; /* Limit height for larger screens */
+            object-fit: contain; /* Ensure image fits within canvas without distortion */
+            position: relative; /* Needed for absolute positioning of draggable lines */
+            cursor: crosshair;
+        }
+        .button-primary {
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+            padding: 0.75rem 1.5rem; /* py-3 px-6 */
+            border-radius: 0.75rem; /* rounded-xl */
+            font-weight: 600; /* font-semibold */
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .button-primary:hover {
+            background-color: #4338ca; /* indigo-700 */
+        }
+        .button-secondary {
+            background-color: #6b7280; /* gray-500 */
+            color: white;
+            padding: 0.75rem 1.5rem; /* py-3 px-6 */
+            border-radius: 0.75rem; /* rounded-xl */
+            font-weight: 600; /* font-semibold */
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .button-secondary:hover {
+            background-color: #4b5563; /* gray-600 */
+        }
+        .input-file {
+            display: none;
+        }
+        .custom-file-upload {
+            border: 2px dashed #9ca3af; /* gray-400 */
+            border-radius: 0.75rem; /* rounded-xl */
+            padding: 1rem 1.5rem; /* p-4 px-6 */
+            cursor: pointer;
+            text-align: center;
+            color: #4b5563; /* gray-600 */
+            font-weight: 600; /* font-semibold */
+            transition: border-color 0.3s ease, color 0.3s ease;
+        }
+        .custom-file-upload:hover {
+            border-color: #6b7280; /* gray-500 */
+            color: #374151; /* gray-700 */
+        }
+        .grid-selector select {
+            border: 1px solid #d1d5db; /* gray-300 */
+            border-radius: 0.5rem; /* rounded-lg */
+            padding: 0.5rem 1rem; /* py-2 px-4 */
+            font-size: 1rem;
+            background-color: white;
+            appearance: none; /* Remove default arrow */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='currentColor'%3E%3Cpath fill-rule='evenodd' d='M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z' clip-rule='evenodd'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 1.5em 1.5em;
+        }
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 1000;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            text-align: center;
+        }
+        .message-box button {
+            background-color: #4f46e5;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Styles for draggable lines */
+        .draggable-line {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.7); /* Darker for better visibility */
+            z-index: 10;
+            cursor: grab;
+        }
+        .draggable-line.horizontal {
+            width: 100%;
+            height: 4px; /* Thicker for easier grabbing */
+            left: 0;
+            transform: translateY(-50%);
+        }
+        .draggable-line.vertical {
+            height: 100%;
+            width: 4px; /* Thicker for easier grabbing */
+            top: 0;
+            transform: translateX(-50%);
+        }
+        .draggable-line:hover {
+            background-color: #4f46e5; /* Highlight on hover */
+            cursor: grab;
+        }
+        .draggable-line.dragging {
+            cursor: grabbing;
+        }
+
+        /* Styles for cropped sticker preview items */
+        .sticker-preview-item {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: transform 0.2s ease-in-out;
+        }
+        .sticker-preview-item:hover {
+            transform: scale(1.05);
+        }
+        .sticker-preview-item.selected {
+            border-color: #4f46e5; /* Highlight selected */
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.5);
+        }
+        .sticker-preview-item .checkmark {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #4f46e5;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            opacity: 0; /* Hidden by default */
+            transition: opacity 0.2s ease-in-out;
+        }
+        .sticker-preview-item.selected .checkmark {
+            opacity: 1; /* Show when selected */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="container bg-white rounded-xl shadow-xl p-6 flex flex-col gap-6 w-full max-w-4xl">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-4">Sticker Cropper & Packager</h1>
+
+        <!-- File Upload Section -->
+        <div class="flex flex-col items-center gap-4">
+            <input type="file" id="imageInput" accept="image/*" class="input-file">
+            <label for="imageInput" class="custom-file-upload w-full max-w-md">
+                Click to Upload Image
+            </label>
+            <p id="fileName" class="text-gray-600 text-sm italic"></p>
+        </div>
+
+        <!-- Canvas and Controls Section -->
+        <div class="flex flex-col items-center gap-4">
+            <div id="canvasContainer" class="relative w-full max-w-full h-auto rounded-lg shadow-md">
+                <canvas id="imageCanvas"></canvas>
+                <!-- Draggable lines will be appended here by JS -->
+            </div>
+
+            <div class="grid-selector flex items-center gap-4">
+                <label for="gridSize" class="text-gray-700 font-semibold">Select Grid:</label>
+                <select id="gridSize" class="rounded-lg border border-gray-300 py-2 px-4 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="1x1">No Grid (Free Crop)</option>
+                    <option value="2x2">2x2</option>
+                    <option value="3x3" selected>3x3</option>
+                    <option value="4x4">4x4</option>
+                    <option value="5x5">5x5</option>
+                    <option value="6x6">6x6</option>
+                </select>
+            </div>
+            <p class="text-sm text-gray-500 mt-2">
+                Click on the image to select a sticker within the grid. <br>
+                Drag the grid lines to adjust crop areas. Click a selected sticker below to remove it.
+            </p>
+        </div>
+
+        <!-- Cropped Stickers Preview and Download -->
+        <div class="flex flex-col gap-4">
+            <h2 class="text-xl font-semibold text-gray-800">Selected Stickers: <span id="stickerCount" class="text-indigo-600">0</span></h2>
+            <div id="croppedStickersPreview" class="flex flex-wrap gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50 min-h-[100px] justify-center items-center">
+                <p id="noStickersMessage" class="text-gray-500 italic">No stickers selected yet.</p>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center mt-4">
+                <button id="downloadZipBtn" class="button-primary w-full sm:w-auto" disabled>Download Stickers (ZIP)</button>
+                <button id="clearStickersBtn" class="button-secondary w-full sm:w-auto" disabled>Clear All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Box for alerts -->
+    <div id="messageBox" class="message-box">
+        <p id="messageText"></p>
+        <button onclick="document.getElementById('messageBox').style.display='none'">OK</button>
+    </div>
+
+    <!-- JSZip and FileSaver.js CDNs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <script>
+        // Function to display custom messages instead of alert()
+        function showMessage(message) {
+            const messageBox = document.getElementById('messageBox');
+            const messageText = document.getElementById('messageText');
+            messageText.textContent = message;
+            messageBox.style.display = 'flex';
+        }
+
+        const imageInput = document.getElementById('imageInput');
+        const fileNameDisplay = document.getElementById('fileName');
+        const imageCanvas = document.getElementById('imageCanvas');
+        const ctx = imageCanvas.getContext('2d');
+        const gridSizeSelect = document.getElementById('gridSize');
+        const croppedStickersPreview = document.getElementById('croppedStickersPreview');
+        const stickerCountSpan = document.getElementById('stickerCount');
+        const downloadZipBtn = document.getElementById('downloadZipBtn');
+        const clearStickersBtn = document.getElementById('clearStickersBtn');
+        const noStickersMessage = document.getElementById('noStickersMessage');
+        const canvasContainer = document.getElementById('canvasContainer');
+
+        let originalImage = new Image();
+        let croppedImages = []; // Stores objects { dataUrl, filename, id }
+        let gridRows = 3;
+        let gridCols = 3;
+        let imageLoaded = false;
+        let nextStickerId = 0; // Unique ID for each cropped sticker
+
+        // Store grid line positions relative to the image's original dimensions
+        // These will be scaled to canvas dimensions for drawing and interaction
+        let horizontalLinePositions = []; // Array of y-coordinates (0 to 1, percentage of image height)
+        let verticalLinePositions = [];   // Array of x-coordinates (0 to 1, percentage of image width)
+
+        let isDragging = false;
+        let draggedLine = null; // Stores the DOM element of the line being dragged
+        let dragStartCoord = { x: 0, y: 0 }; // Mouse position when drag starts
+        let dragStartLinePos = 0; // Initial position of the line being dragged
+
+        // Function to resize canvas and draw image, maintaining aspect ratio
+        function drawImageOnCanvas() {
+            if (!originalImage.src) return;
+
+            const maxWidth = canvasContainer.clientWidth;
+            const maxHeight = window.innerHeight * 0.7;
+
+            const aspectRatio = originalImage.width / originalImage.height;
+
+            let newWidth = maxWidth;
+            let newHeight = maxWidth / aspectRatio;
+
+            if (newHeight > maxHeight) {
+                newHeight = maxHeight;
+                newWidth = maxHeight * aspectRatio;
+            }
+
+            // Ensure the canvas dimensions are integers
+            imageCanvas.width = Math.floor(newWidth);
+            imageCanvas.height = Math.floor(newHeight);
+
+            ctx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
+            ctx.drawImage(originalImage, 0, 0, imageCanvas.width, imageCanvas.height);
+            drawGridLines();
+        }
+
+        // Function to initialize grid line positions based on current gridRows/Cols
+        function initializeGridLines() {
+            horizontalLinePositions = [];
+            verticalLinePositions = [];
+
+            // Calculate initial positions based on even distribution
+            for (let i = 1; i < gridRows; i++) {
+                horizontalLinePositions.push(i / gridRows); // Percentage of height
+            }
+            for (let i = 1; i < gridCols; i++) {
+                verticalLinePositions.push(i / gridCols); // Percentage of width
+            }
+        }
+
+        // Function to draw grid lines on the canvas and create draggable DOM elements
+        function drawGridLines() {
+            if (!imageLoaded) return;
+
+            // Clear previous grid lines drawn by canvas and remove old draggable elements
+            ctx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
+            ctx.drawImage(originalImage, 0, 0, imageCanvas.width, imageCanvas.height);
+
+            // Remove existing draggable lines
+            document.querySelectorAll('.draggable-line').forEach(line => line.remove());
+
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)'; // Default line color
+            ctx.lineWidth = 1;
+
+            // Draw vertical lines and create draggable elements
+            verticalLinePositions.forEach((pos, index) => {
+                const xCanvas = pos * imageCanvas.width;
+                ctx.beginPath();
+                ctx.moveTo(xCanvas, 0);
+                ctx.lineTo(xCanvas, imageCanvas.height);
+                ctx.stroke();
+
+                if (gridRows > 1 || gridCols > 1) { // Only add draggable lines if a grid is active
+                    const lineDiv = document.createElement('div');
+                    lineDiv.classList.add('draggable-line', 'vertical');
+                    lineDiv.style.left = `${xCanvas}px`;
+                    lineDiv.dataset.index = index;
+                    lineDiv.dataset.type = 'vertical';
+                    canvasContainer.appendChild(lineDiv);
+                }
+            });
+
+            // Draw horizontal lines and create draggable elements
+            horizontalLinePositions.forEach((pos, index) => {
+                const yCanvas = pos * imageCanvas.height;
+                ctx.beginPath();
+                ctx.moveTo(0, yCanvas);
+                ctx.lineTo(imageCanvas.width, yCanvas);
+                ctx.stroke();
+
+                if (gridRows > 1 || gridCols > 1) { // Only add draggable lines if a grid is active
+                    const lineDiv = document.createElement('div');
+                    lineDiv.classList.add('draggable-line', 'horizontal');
+                    lineDiv.style.top = `${yCanvas}px`;
+                    lineDiv.dataset.index = index;
+                    lineDiv.dataset.type = 'horizontal';
+                    canvasContainer.appendChild(lineDiv);
+                }
+            });
+        }
+
+        // Handle image file selection
+        imageInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                fileNameDisplay.textContent = `Selected: ${file.name}`;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    originalImage.onload = () => {
+                        imageLoaded = true;
+                        initializeGridLines(); // Initialize grid lines for the new image
+                        drawImageOnCanvas();
+                        // Reset cropped images when a new image is loaded
+                        croppedImages = [];
+                        nextStickerId = 0; // Reset ID counter
+                        updatePreview();
+                        downloadZipBtn.disabled = true;
+                        clearStickersBtn.disabled = true;
+                    };
+                    originalImage.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                fileNameDisplay.textContent = '';
+                imageLoaded = false;
+                ctx.clearRect(0, 0, imageCanvas.width, imageCanvas.height);
+                originalImage.src = '';
+                croppedImages = [];
+                nextStickerId = 0;
+                updatePreview();
+                downloadZipBtn.disabled = true;
+                clearStickersBtn.disabled = true;
+            }
+        });
+
+        // Handle grid size change
+        gridSizeSelect.addEventListener('change', (event) => {
+            const value = event.target.value;
+            if (value === '1x1') {
+                gridRows = 1;
+                gridCols = 1;
+            } else {
+                [gridRows, gridCols] = value.split('x').map(Number);
+            }
+            initializeGridLines(); // Re-initialize grid lines based on new grid size
+            drawGridLines(); // Redraw grid with new size or no grid
+        });
+
+        // Mouse down event for dragging lines
+        canvasContainer.addEventListener('mousedown', (e) => {
+            if (!imageLoaded) return;
+
+            const target = e.target;
+            if (target.classList.contains('draggable-line')) {
+                isDragging = true;
+                draggedLine = target;
+                draggedLine.classList.add('dragging');
+                dragStartCoord = { x: e.clientX, y: e.clientY };
+
+                const index = parseInt(draggedLine.dataset.index);
+                if (draggedLine.dataset.type === 'horizontal') {
+                    dragStartLinePos = horizontalLinePositions[index];
+                } else {
+                    dragStartLinePos = verticalLinePositions[index];
+                }
+                e.preventDefault(); // Prevent default browser drag behavior
+            }
+        });
+
+        // Mouse move event for dragging lines
+        canvasContainer.addEventListener('mousemove', (e) => {
+            if (!imageLoaded) return;
+
+            if (isDragging && draggedLine) {
+                const rect = imageCanvas.getBoundingClientRect();
+                const deltaX = e.clientX - dragStartCoord.x;
+                const deltaY = e.clientY - dragStartCoord.y;
+
+                if (draggedLine.dataset.type === 'horizontal') {
+                    // Calculate new position relative to canvas height
+                    let newPos = dragStartLinePos + (deltaY / rect.height);
+                    // Clamp position between 0 and 1 (exclusive of 0 and 1 for lines)
+                    newPos = Math.max(0.01, Math.min(0.99, newPos));
+                    horizontalLinePositions[parseInt(draggedLine.dataset.index)] = newPos;
+                } else { // vertical
+                    // Calculate new position relative to canvas width
+                    let newPos = dragStartLinePos + (deltaX / rect.width);
+                    // Clamp position between 0 and 1 (exclusive of 0 and 1 for lines)
+                    newPos = Math.max(0.01, Math.min(0.99, newPos));
+                    verticalLinePositions[parseInt(draggedLine.dataset.index)] = newPos;
+                }
+                drawGridLines(); // Redraw grid with updated line positions
+            }
+        });
+
+        // Mouse up event to stop dragging
+        canvasContainer.addEventListener('mouseup', () => {
+            if (isDragging && draggedLine) {
+                isDragging = false;
+                draggedLine.classList.remove('dragging');
+                draggedLine = null;
+            }
+        });
+
+        // Handle canvas click for cropping (when not dragging a line)
+        imageCanvas.addEventListener('click', (event) => {
+            if (!imageLoaded || isDragging) { // Prevent cropping if dragging a line
+                return;
+            }
+
+            const rect = imageCanvas.getBoundingClientRect();
+            // Get click coordinates relative to the canvas (0 to canvas.width/height)
+            const clickXCanvas = event.clientX - rect.left;
+            const clickYCanvas = event.clientY - rect.top;
+
+            // Scale click coordinates to original image dimensions
+            const scaleX = originalImage.width / imageCanvas.width;
+            const scaleY = originalImage.height / imageCanvas.height;
+            const clickXOriginal = clickXCanvas * scaleX;
+            const clickYOriginal = clickYCanvas * scaleY;
+
+            let cropX, cropY, cropWidth, cropHeight;
+
+            if (gridRows === 1 && gridCols === 1) {
+                // Free crop mode: Clicking crops the entire image.
+                cropX = 0;
+                cropY = 0;
+                cropWidth = originalImage.width;
+                cropHeight = originalImage.height;
+            } else {
+                // Determine which grid cell was clicked based on current line positions
+                // Find the horizontal boundaries
+                let topBoundary = 0;
+                let bottomBoundary = originalImage.height;
+                // Sort horizontal line positions to ensure correct order
+                const sortedH = [...horizontalLinePositions].sort((a, b) => a - b);
+                for (let i = 0; i < sortedH.length; i++) {
+                    const lineYOriginal = sortedH[i] * originalImage.height;
+                    if (clickYOriginal < lineYOriginal) {
+                        bottomBoundary = lineYOriginal;
+                        break;
+                    }
+                    topBoundary = lineYOriginal;
+                }
+
+                // Find the vertical boundaries
+                let leftBoundary = 0;
+                let rightBoundary = originalImage.width;
+                // Sort vertical line positions to ensure correct order
+                const sortedV = [...verticalLinePositions].sort((a, b) => a - b);
+                for (let i = 0; i < sortedV.length; i++) {
+                    const lineXOriginal = sortedV[i] * originalImage.width;
+                    if (clickXOriginal < lineXOriginal) {
+                        rightBoundary = lineXOriginal;
+                        break;
+                    }
+                    leftBoundary = lineXOriginal;
+                }
+
+                cropX = leftBoundary;
+                cropY = topBoundary;
+                cropWidth = rightBoundary - leftBoundary;
+                cropHeight = bottomBoundary - topBoundary;
+
+                // Draw a temporary highlight on the selected cell
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(
+                    cropX / scaleX, // Convert original coords back to canvas coords for drawing
+                    cropY / scaleY,
+                    cropWidth / scaleX,
+                    cropHeight / scaleY
+                );
+                // Remove highlight after a short delay
+                setTimeout(drawGridLines, 300);
+            }
+
+            // Create a temporary canvas to draw the cropped image
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+
+            tempCanvas.width = cropWidth;
+            tempCanvas.height = cropHeight;
+
+            tempCtx.drawImage(
+                originalImage,
+                cropX, cropY, cropWidth, cropHeight, // Source rectangle
+                0, 0, cropWidth, cropHeight          // Destination rectangle
+            );
+
+            // Get the cropped image as a Data URL
+            const croppedDataUrl = tempCanvas.toDataURL('image/png'); // PNG for transparency if needed
+            const newSticker = {
+                id: nextStickerId++, // Assign a unique ID
+                dataUrl: croppedDataUrl,
+                filename: `sticker_${nextStickerId}.png`
+            };
+            croppedImages.push(newSticker);
+            updatePreview();
+        });
+
+        // Function to update the preview section
+        function updatePreview() {
+            croppedStickersPreview.innerHTML = ''; // Clear existing previews
+            if (croppedImages.length === 0) {
+                noStickersMessage.style.display = 'block';
+            } else {
+                noStickersMessage.style.display = 'none';
+                croppedImages.forEach((item) => {
+                    const stickerDiv = document.createElement('div');
+                    stickerDiv.classList.add('sticker-preview-item', 'selected'); // Always add 'selected' class
+                    stickerDiv.dataset.id = item.id; // Store the unique ID
+
+                    const img = document.createElement('img');
+                    img.src = item.dataUrl;
+                    img.alt = `Sticker ${item.id}`;
+                    img.classList.add('w-full', 'h-full', 'object-contain', 'rounded-lg');
+
+                    const checkmark = document.createElement('div');
+                    checkmark.classList.add('checkmark');
+                    checkmark.innerHTML = '&#10003;'; // Unicode checkmark
+
+                    stickerDiv.appendChild(img);
+                    stickerDiv.appendChild(checkmark);
+                    croppedStickersPreview.appendChild(stickerDiv);
+
+                    // Add click listener to remove sticker
+                    stickerDiv.addEventListener('click', () => {
+                        removeSticker(item.id);
+                    });
+                });
+            }
+            stickerCountSpan.textContent = croppedImages.length;
+            downloadZipBtn.disabled = croppedImages.length === 0;
+            clearStickersBtn.disabled = croppedImages.length === 0;
+        }
+
+        // Function to remove a sticker by its ID
+        function removeSticker(idToRemove) {
+            const initialLength = croppedImages.length;
+            croppedImages = croppedImages.filter(item => item.id !== idToRemove);
+            if (croppedImages.length < initialLength) {
+                updatePreview();
+                showMessage(`Sticker removed from pack.`);
+            }
+        }
+
+        // Handle Download ZIP button click
+        downloadZipBtn.addEventListener('click', async () => {
+            if (croppedImages.length === 0) {
+                showMessage("No stickers to download. Please select some first.");
+                return;
+            }
+
+            const zip = new JSZip();
+            croppedImages.forEach((item) => {
+                // Remove the "data:image/png;base64," prefix to get raw base64 data
+                const base64Data = item.dataUrl.split(',')[1];
+                zip.file(item.filename, base64Data, { base64: true });
+            });
+
+            try {
+                const content = await zip.generateAsync({ type: "blob" });
+                saveAs(content, "whatsapp_stickers.zip");
+            } catch (error) {
+                console.error("Error generating ZIP:", error);
+                showMessage("Failed to generate ZIP file. Please try again.");
+            }
+        });
+
+        // Handle Clear All button click
+        clearStickersBtn.addEventListener('click', () => {
+            croppedImages = [];
+            nextStickerId = 0; // Reset ID counter
+            updatePreview();
+            showMessage("All selected stickers cleared.");
+        });
+
+        // Initial update of preview and button states
+        updatePreview();
+
+        // Adjust canvas size and redraw on window resize
+        window.addEventListener('resize', () => {
+            if (imageLoaded) {
+                drawImageOnCanvas();
+            }
+        });
+    </script>
+</body>
+</html>
